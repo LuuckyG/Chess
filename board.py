@@ -10,6 +10,7 @@ class GamePosition:
         self.player = player
         self.castling = castling_rights
         self.EPT = En_Passant_Target
+        self.previous_move = [(-1, -1), (-1, -1)]
         self.HMC = half_move_clock  # Detect draw if there are 50 moves without any capture or pawn movement
         self.history = history  # Dict to check 3-fold repetition.
 
@@ -25,10 +26,10 @@ class GamePosition:
     def set_player(self, player):
         self.player = player
 
-    def get_CastleRights(self):
+    def get_castle_rights(self):
         return self.castling
 
-    def set_CastleRights(self, castling_rights):
+    def set_castle_rights(self, castling_rights):
         self.castling = castling_rights
 
     def get_EPT(self):
@@ -36,6 +37,12 @@ class GamePosition:
 
     def set_EPT(self, EnP_Target):
         self.EPT = EnP_Target
+
+    def get_previous_move(self):
+        return self.previous_move
+
+    def set_previous_move(self, previous_move):
+        self.previous_move = previous_move
 
     def get_HMC(self):
         return self.HMC
