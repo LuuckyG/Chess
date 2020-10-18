@@ -33,149 +33,177 @@ images = rescale_all_images(square_height, square_width, **images)
 screen = pygame.display.set_mode(size_of_bg)
 pygame.display.set_caption('Chess')
 screen.blit(background, (0, 0))
-
-# Game variables
-isDown = False
-isClicked = False
-isTransition = False
-isRightClicked = []
-
-# Main loop
-font = pygame.font.SysFont("comicsans", 30, True)
-play = True
-clock = pygame.time.Clock()
 draw_board(screen, background, position, pieces_image, square_width, square_height, images)
-dragPiece = None
 
-while play:
-    clock.tick(60)  # 60 fps
 
-    # Update board position
-    player = position.get_player()
-    board = position.get_board()
+def main():
+    global screen, background, position, pieces_image, square_width, square_height, images
 
-    # Get user input
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            play = False
-            break
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            play = False
-            break
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
-            play = False
-            break
+    # Game variables
+    isDown = False
+    isClicked = False
+    isTransition = False
+    isRightClicked = []
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont("comicsans", 30, True)
 
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:  # Right mouse
-            pos = pygame.mouse.get_pos()
-            chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
-            x = chess_coord[0]
-            y = chess_coord[1]
+    while position.get_play():
+        clock.tick(60)  # 60 fps
 
-            isClicked = True
-            isRightClicked.append((x, y))
+        # Update board position
+        player = position.get_player()
+        board = position.get_board()
 
-        if (isDown or isClicked) and event.type == pygame.MOUSEBUTTONUP and event.button == 3:
-            pygame.draw.rect(screen, (255, 0, 0, 50), (x, y, square_width, square_height), 2)
-            isClicked = False
+        # Get user input
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                position.set_play(False)
+                break
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                position.set_play(False)
+                break
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                position.set_play(False)
+                break
 
-        if not isDown and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            isRightClicked = []
-            pos = pygame.mouse.get_pos()
-            chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
-            x = chess_coord[0]
-            y = chess_coord[1]
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:  # Right mouse
+                pos = pygame.mouse.get_pos()
+                chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
+                right_x = chess_coord[0]
+                right_y = chess_coord[1]
 
-            if not is_occupied_by(board, x, y, 'wb'[player]):
-                isDown = False
-                continue
+                isClicked = True
+                if (right_x, right_y) not in isRightClicked:
+                    isRightClicked.append((right_x, right_y))
+                else:
+                    index = isRightClicked.index((right_x, right_y))
+                    isRightClicked.pop(index)
 
-            dragPiece = get_piece(position, square_width, square_height, chess_coord)
-            chess_coord, color, subsection, pos = dragPiece.get_info()
-            pixel_coord = chess_coord_to_pixels(chess_coord, square_width, square_height)
-            isDown = True  # A piece is being dragged
+            if (isDown or isClicked) and event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+                pos = pygame.mouse.get_pos()
+                chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
+                right_x2 = chess_coord[0]
+                right_y2 = chess_coord[1]
 
-        # If a piece is being dragged let the dragging piece follow the mouse:
-        if isDown:
-            m, k = pygame.mouse.get_pos()
-            dragPiece.set_pos((m - square_width / 2, k - square_height / 2))
-            chess_coord, color, subsection, pos = dragPiece.get_info()
+                if (right_x, right_y) != (right_x2, right_y2):
 
-            # Update board, except for moving piece
-            draw_board(screen, background, position, pieces_image,
-                       square_width, square_height, images, drag_coord=chess_coord)
+                    begin_x = right_x * square_width - square_width / 2
+                    begin_y = right_y * square_height - square_height / 2
 
-            # Blit dragged piece on mouse position
-            screen.blit(pieces_image, pos, subsection)
+                    end_x = right_x2 * square_width - square_width / 2
+                    end_y = right_y2 * square_height - square_height / 2
 
-        # If the dragged piece is released, check the move and if valid, make the move.
-        if (isDown or isClicked) and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            isDown = False  # Mouse is released
-            dragPiece.set_pos((-1, -1))  # Set back to coordinate position
+                    # Arrow tips
+                    left_tip = (end_x - square_width / 2, end_y)
+                    right_tip = (end_x + square_width / 2, end_y)
 
-            pos = pygame.mouse.get_pos()
-            chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
-            x2 = chess_coord[0]
-            y2 = chess_coord[1]
+                    arrow = ((begin_x, begin_y), (end_x, end_y), left_tip, (end_x, end_y), right_tip)
 
-            isTransition = False
-            if (x, y) == (x2, y2):
-                # Check if piece was just clicked
-                draw_board(screen, background, position, pieces_image,
-                           square_width, square_height, images, is_clicked=isClicked)
-                print("Same position! No move made!")
-                continue
-            else:
-                position, previous_move = make_move(position, x, y, x2, y2, previous_move)
-                if previous_move[-1] == (x2, y2):
-                    isTransition = True
-                    dragPiece.set_coord((x2, y2))  # Update position of selected piece
+                isClicked = False
 
-            if not isTransition:
-                w_pieces, b_pieces = create_pieces(position, square_width, square_height)
-            else:
-                movingPiece = dragPiece
-                origin = chess_coord_to_pixels((x, y), square_width, square_height)
-                destiny = chess_coord_to_pixels((x2, y2), square_width, square_height)
-                movingPiece.set_pos(origin)
-                step = (destiny[0] - origin[0], destiny[1] - origin[1])
+            if not isDown and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                isRightClicked = []
+                pos = pygame.mouse.get_pos()
+                chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
+                x = chess_coord[0]
+                y = chess_coord[1]
 
-            # Update board, with move
-            draw_board(screen, background, position, pieces_image, square_width, square_height, images)
+                if not is_occupied_by(board, x, y, 'wb'[player]):
+                    isDown = False
+                    continue
 
-        # Visualize the valid move with transition
-        if isTransition:
-            p, q = movingPiece.get_pos()
-            dx2, dy2 = destiny
-            n = 30.0
+                dragPiece = get_piece(position, square_width, square_height, chess_coord)
+                chess_coord, color, subsection, pos = dragPiece.get_info()
+                pixel_coord = chess_coord_to_pixels(chess_coord, square_width, square_height)
+                isDown = True  # A piece is being dragged
 
-            if abs(p - dx2) <= abs(step[0] / n) and abs(q - dy2) <= abs(step[1] / n):
-                # The moving piece has reached its destination
-                # Snap it back to its grid position
-                movingPiece.set_pos((-1, -1))
+            # If a piece is being dragged let the dragging piece follow the mouse:
+            if isDown:
+                m, k = pygame.mouse.get_pos()
+                dragPiece.set_pos((m - square_width / 2, k - square_height / 2))
+                chess_coord, color, subsection, pos = dragPiece.get_info()
 
-                # Generate new piece list in case one got captured
-                w_pieces, b_pieces = create_pieces(position, square_width, square_height)
-
-                # No more transitioning
-                isTransition = False
-
-            else:
-                # Move it closer to its destination.
-                movingPiece.set_pos((p + step[0] / n, q + step[1] / n))
-                chess_coord, color, subsection, pos = movingPiece.get_info()
+                # Update board, except for moving piece
                 draw_board(screen, background, position, pieces_image,
                            square_width, square_height, images, drag_coord=chess_coord)
+
+                # Blit dragged piece on mouse position
                 screen.blit(pieces_image, pos, subsection)
 
-    if not isDown and not isClicked and not isTransition:
-        # Update board after each turn, when transition is done
-        draw_board(screen, background, position, pieces_image,
-                   square_width, square_height, images,
-                   right_clicked=isRightClicked, is_clicked=isClicked)
+            # If the dragged piece is released, check the move and if valid, make the move.
+            if (isDown or isClicked) and event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                isDown = False  # Mouse is released
+                dragPiece.set_pos((-1, -1))  # Set back to coordinate position
 
-    # Update display and show last move
-    pygame.display.update()
+                pos = pygame.mouse.get_pos()
+                chess_coord = pixel_coord_to_chess(pos, square_width, square_height)
+                x2 = chess_coord[0]
+                y2 = chess_coord[1]
+
+                isTransition = False
+                if (x, y) == (x2, y2):
+                    # Check if piece was just clicked
+                    draw_board(screen, background, position, pieces_image,
+                               square_width, square_height, images, is_clicked=isClicked)
+                    print("Same position! No move made!")
+                    continue
+                else:
+                    position = make_move(position, x, y, x2, y2)
+                    previous_move = position.get_previous_move()
+                    if previous_move[-1] == (x2, y2):
+                        isTransition = True
+                        dragPiece.set_coord((x2, y2))  # Update position of selected piece
+
+                if not isTransition:
+                    pieces = create_pieces(position, square_width, square_height)
+                    w_pieces, b_pieces = pieces["white"], pieces["black"]
+                else:
+                    movingPiece = dragPiece
+                    origin = chess_coord_to_pixels((x, y), square_width, square_height)
+                    destiny = chess_coord_to_pixels((x2, y2), square_width, square_height)
+                    movingPiece.set_pos(origin)
+                    step = (destiny[0] - origin[0], destiny[1] - origin[1])
+
+                # Update board, with move
+                draw_board(screen, background, position, pieces_image, square_width, square_height, images)
+
+            # Visualize the valid move with transition
+            if isTransition:
+                p, q = movingPiece.get_pos()
+                dx2, dy2 = destiny
+                n = 30.0
+
+                if abs(p - dx2) <= abs(step[0] / n) and abs(q - dy2) <= abs(step[1] / n):
+                    # The moving piece has reached its destination
+                    # Snap it back to its grid position
+                    movingPiece.set_pos((-1, -1))
+
+                    # Generate new piece list in case one got captured
+                    pieces = create_pieces(position, square_width, square_height)
+                    w_pieces, b_pieces = pieces["white"], pieces["black"]
+
+                    # No more transitioning
+                    isTransition = False
+
+                else:
+                    # Move it closer to its destination.
+                    movingPiece.set_pos((p + step[0] / n, q + step[1] / n))
+                    chess_coord, color, subsection, pos = movingPiece.get_info()
+                    draw_board(screen, background, position, pieces_image,
+                               square_width, square_height, images, drag_coord=chess_coord)
+                    screen.blit(pieces_image, pos, subsection)
+
+        if not isDown and not isClicked and not isTransition:
+            # Update board after each turn, when transition is done
+            draw_board(screen, background, position, pieces_image,
+                       square_width, square_height, images,
+                       right_clicked=isRightClicked, is_clicked=isClicked)
+
+        # Update display and show last move
+        pygame.display.update()
+
+    pygame.quit()
 
 
-pygame.quit()
+if __name__ == '__main__':
+    main()

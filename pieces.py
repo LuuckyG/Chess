@@ -3,14 +3,14 @@
 
 class Piece:
     """Base class for all pieces"""
-    def __init__(self, piece_info, color, chess_coord, square_width, square_height):
+    def __init__(self, name, color, chess_coord, square_width, square_height):
 
-        self.piece_info = piece_info
+        self.name = name
         self.color = color
         self.chess_coord = chess_coord
 
-        self.piece = self.piece_info[0]
-        self.color = self.piece_info[1]
+        self.piece = self.name[0]
+        self.color = self.name[1]
 
         self.x = self.chess_coord[0]
         self.y = self.chess_coord[1]
@@ -55,4 +55,4 @@ class Piece:
         self.chess_coord = coord
 
     def __repr__(self):
-        return self.piece_info + '(' + str(self.chess_coord[0]) + ',' + str(self.chess_coord[1]) + ')'
+        return self.name + '(' + str(self.chess_coord[0]) + ',' + str(self.chess_coord[1]) + ')'

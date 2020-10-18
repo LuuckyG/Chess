@@ -26,13 +26,7 @@ def initialize_board():
     # Castling rights (King side, Queen side)
     castling_rights = [[True, True], [True, True]]
 
-    # This variable will store a coordinate if there is a square that can be
-    # en passant captured on. Otherwise it stores -1, indicating lack of en passant targets
-    en_passant_target = -1
-
-    # This variable stores the number of reversible moves that have been played so far.
-    half_move_clock = 0
-    position = GamePosition(board, player, castling_rights, en_passant_target, half_move_clock)
+    position = GamePosition(board, player, castling_rights)
     return position
 
 
@@ -55,6 +49,7 @@ def get_all_images():
         'circle_image_green_big': circle_image_green_big,
         'yellow_box': yellow_box_image
         }
+
     return images
 
 
@@ -82,22 +77,26 @@ def pixel_coord_to_chess(pixel_coord, square_width, square_height):
 def create_pieces(position, square_width, square_height):
     """Create piece objects based on board position"""
     board = position.get_board()
+    pieces = {
+        "white": [],
+        "black": []
+    }
 
-    white_pieces, black_pieces = [], []
     for x in range(8):
         for y in range(8):
             if board[x][y] != 0:
                 p = Piece(board[x][y], board[x][y][1], (y, x), square_width, square_height)
                 if board[x][y][1] == 'w':
-                    white_pieces.append(p)
+                    pieces["white"].append(p)
                 else:
-                    black_pieces.append(p)
-    return white_pieces, black_pieces
+                    pieces["black"].append(p)
+    return pieces
 
 
 def get_piece(position, square_width, square_height, mouse_coord):
     """Get piece selected by mouse click"""
-    white_pieces, black_pieces = create_pieces(position, square_width, square_height)
+    pieces = create_pieces(position, square_width, square_height)
+    white_pieces, black_pieces = pieces["white"], pieces["black"]
     pieces = white_pieces + black_pieces
 
     for piece in pieces:
@@ -111,7 +110,8 @@ def draw_board(screen, background, position, pieces_image, square_width, square_
     previous_move = position.get_previous_move()
     screen.blit(background, (0, 0))
     player = position.get_player()
-    w_pieces, b_pieces = create_pieces(position, square_width, square_height)
+    pieces = create_pieces(position, square_width, square_height)
+    w_pieces, b_pieces = pieces["white"], pieces["black"]
 
     # Show square
     mouse_pos = pygame.mouse.get_pos()
@@ -132,6 +132,10 @@ def draw_board(screen, background, position, pieces_image, square_width, square_
                               square_width, square_height))
     elif is_clicked:
         pass
+
+    # pygame.draw.polygon(screen, (225, 0, 0),
+    #                     ((0, 100), (0, 200), (200, 200), (200, 300),
+    #                      (300, 150), (200, 0), (200, 100)))
 
     # Blit over other pieces
     if player == 1:  # Player is black

@@ -5,14 +5,16 @@ import copy
 class GamePosition:
     """Class to store current position on the board"""
 
-    def __init__(self, board, player, castling_rights, En_Passant_Target, half_move_clock, history={}):
+    def __init__(self, board, player, castling_rights):
         self.board = board
         self.player = player
         self.castling = castling_rights
-        self.EPT = En_Passant_Target
+        self.EPT = -1  # This variable will store a coordinate if there is a square that can be en passant captured
+        # on. Otherwise it stores -1, indicating lack of en passant targets
         self.previous_move = [(-1, -1), (-1, -1)]
-        self.HMC = half_move_clock  # Detect draw if there are 50 moves without any capture or pawn movement
-        self.history = history  # Dict to check 3-fold repetition.
+        self.play = True
+        self.HMC = 0  # Detect draw if there are 50 moves without any capture or pawn movement
+        self.history = {}  # Dictionary to check 3-fold repetition.
 
     def get_board(self):
         return self.board
@@ -50,40 +52,47 @@ class GamePosition:
     def set_HMC(self, HMC):
         self.HMC = HMC
 
+    def get_history(self):
+        return self.history
+
+    def set_history(self, position):
+        key = position_to_key(position)
+        if key in self.history.keys():
+            self.history[key] += 1
+        else:
+            self.history[key] = 1
+
+    def get_play(self):
+        return self.play
+
+    def set_play(self, play):
+        self.play = play
+
     def clone(self):
         # This method returns another instance of the current object with exactly the same
         # parameters but independent of the current object.
         clone = GamePosition(copy.deepcopy(self.board),  # Independent copy
                              self.player,
-                             copy.deepcopy(self.castling),  # Independent copy
-                             self.EPT,
-                             self.HMC)
+                             copy.deepcopy(self.castling))  # Independent copy
+        clone.set_EPT(self.EPT)
+        clone.set_HMC(self.HMC)
         return clone
 
 
-class BoardEvents:
-    """
-    Class to highlight events in the game, such as previous move, check, current selected piece and
-    available moves for the selected piece.
-    """
+def position_to_key(position):
+    """Create tuple of information about current position"""
+    board = position.get_board()
+    castle_rights = position.get_castle_rights()
 
-    def __init__(self, position, piece, possible_moves, previous_move):
-        self.position = position
-        self.piece = piece
-        self.possible_moves = possible_moves
-        self.previous_move = previous_move
+    save_board = []
+    for ranks in board:
+        save_board.append(tuple(ranks))
+    save_board = tuple(save_board)
 
-    def highlight_selected_piece(self):
-        pass
+    save_rights = []
+    for right in castle_rights:
+        save_rights.append(tuple(right))
+    save_rights = tuple(save_rights)
 
-    def show_possible_moves(self):
-        pass
-
-    def show_previous_move(self):
-        pass
-
-    def show_check_move(self):
-        pass
-
-    def show_check_text(self):
-        pass
+    key = (save_board, position.get_player(), save_rights)
+    return key

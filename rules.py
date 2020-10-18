@@ -9,29 +9,20 @@ def opposite(color):
         return 'w'
 
 
+def is_captured(board, target_x, target_y):
+    return board[target_y][target_x] != 0
+
+
+def is_promotion(position, y):
+    return y == position.get_player() * 7
+
+
 def get_piece_position(position, piece):
     board = position.get_board()
     for x in range(8):
         for y in range(8):
             if board[y][x] == piece:
                 return x, y
-
-
-def is_check(board, x, y, piece, color):
-    pass
-
-
-def is_checkmate(board, x, y, piece, color):
-    pass
-
-
-def is_stalemate(board, x, y, piece, color):
-    pass
-
-
-def is_promotion(position, y):
-    player = position.get_player()
-    return y == player * 7
 
 
 def en_passant_rights(position, x, y):
@@ -84,7 +75,7 @@ def is_occupied_by(board, x, y, color):
     return False
 
 
-def valid_piece_move(position, x, y, color):
+def valid_piece_move(position, x, y, color, attack_search=False):
     """Check if the piece makes legal move"""
     board = position.get_board()
     piece = board[y][x][0]
@@ -153,7 +144,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y, enemy_color):
                             valid_moves.append((x_possible, y))
-                        break  # Rook cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break  # Rook cannot jump over other pieces, no need to search further
 
                     x_possible += dx  # Update square that is checked
 
@@ -170,7 +162,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x, y_possible, enemy_color):
                             valid_moves.append((x, y_possible))
-                        break  # Rook cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break  # Rook cannot jump over other pieces, no need to search further
 
                     y_possible += dy  # Update square that is checked
 
@@ -220,7 +213,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y_possible, enemy_color):
                             valid_moves.append((x_possible, y_possible))
-                        break
+                        if not attack_search:
+                            break
 
                     # Update square that is checked
                     x_possible += d
@@ -241,7 +235,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y_opposite, enemy_color):
                             valid_moves.append((x_possible, y_opposite))
-                        break  # Queen cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break  # Bishop cannot jump over other pieces, no need to search further
 
                     # Update square that is checked
                     x_possible += d
@@ -261,7 +256,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y, enemy_color):
                             valid_moves.append((x_possible, y))
-                        break  # Queen cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break  # Queen cannot jump over other pieces, no need to search further
 
                     x_possible += dx  # Update square that is checked
 
@@ -278,7 +274,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x, y_possible, enemy_color):
                             valid_moves.append((x, y_possible))
-                        break  # Queen cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break  # Queen cannot jump over other pieces, no need to search further
 
                     y_possible += dy  # Update square that is checked
 
@@ -298,7 +295,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y_possible, enemy_color):
                             valid_moves.append((x_possible, y_possible))
-                        break
+                        if not attack_search:
+                            break
 
                     # Update square that is checked
                     x_possible += d
@@ -319,7 +317,8 @@ def valid_piece_move(position, x, y, color):
                     else:
                         if is_occupied_by(board, x_possible, y_opposite, enemy_color):
                             valid_moves.append((x_possible, y_opposite))
-                        break  # Queen cannot jump over other pieces, no need to search further
+                        if not attack_search:
+                            break # Queen cannot jump over other pieces, no need to search further
 
                     # Update square that is checked
                     x_possible += d
@@ -392,17 +391,34 @@ def valid_piece_move(position, x, y, color):
     return valid_moves, position
 
 
+def all_possible_moves(position, color):
+    """Get all possible moves of all pieces of a player"""
+    board = position.get_board()
+    player_pieces = []
+    player_moves = []
+
+    for x in range(8):
+        for y in range(8):
+            if board[y][x] != 0:
+                if board[y][x][1] == color:
+                    player_pieces.append(board[y][x])
+                    player_moves.append(valid_piece_move(position, x, y, color)[0])
+    return player_moves
+
+
 def is_attacked_by(position, target_x, target_y, color):
     board = position.get_board()
-    piece = board[y][x][0]
-    color = board[y][x][1]
-    enemy_color = opposite(color)
+    piece = board[target_y][target_x][0]
+    attacking_pieces = []
     attacked_squares = []
-
-    valid_piece_move(position, x, y)
-
-
-
+    for x in range(8):
+        for y in range(8):
+            if board[y][x] != 0:
+                if board[y][x][1] == color:
+                    attacking_piece = board[y][x]
+                    pos_squares, _ = valid_piece_move(position, x, y, color, attack_search=True)
+                    if (target_x, target_y) in pos_squares:
+                        pass
 
     return attacked_squares
 
@@ -411,25 +427,48 @@ def attacked_squares(position, color):
     pass
 
 
+def is_check(position, x, y, piece, color):
+    pass
+
+
+def is_checkmate(position, x, y, piece, color):
+    pass
+
+
+def is_stalemate(position, x, y, piece, color):
+    pass
+
+
 def make_move(position, x, y, x2, y2):
     """Check if move is valid, if so update position."""
     player = position.get_player()
     color = 'wb'[player]
+    enemy_color = opposite(color)
+    HMC = position.get_HMC()
+    inCheck = False
+
+    # Check if player is not in check
     king_position = get_piece_position(position, 'K' + color)  # Find position of the king of player
     attacked_squares = is_attacked_by(position,
                                       king_position[0], king_position[1],
-                                      'wb'[1 - player])  # Check if king is attacked by enemy
+                                      enemy_color)  # Check if king is attacked by enemy
 
-    # Get all valid moves of current player
+    # Get all valid moves of selected piece of current player
     valid_moves, position = valid_piece_move(position, x, y, color)
 
-    if (x2, y2) in valid_moves:
+    # Remove moves that lead to player getting into check
+    # for pieces in attacked_squares:
+    #     if pieces in valid_moves or pieces == (x, y):
+    #         inCheck = True
+
+    if (x2, y2) in valid_moves and not inCheck:
         board = position.get_board()
         castle_right = position.get_castle_rights()
 
         # Check additional move options
         if board[y][x][0] == 'P':
             position = en_passant_rights(position, x2, y2)
+            position.set_HMC(0)  # Reset 50 move rule
             if is_promotion(position, y2):
                 board[y][x] = 'Q' + 'wb'[player]  # Automatic promotion to queen
                 position.set_board(board)
@@ -441,19 +480,37 @@ def make_move(position, x, y, x2, y2):
             elif x == 7 and (y == 0 or y == 7) and castle_right[player][1]:
                 castle_right[player][1] = False
             position.set_castle_rights(castle_right)
+        elif is_captured(board, x2, y2):
+            position.set_HMC(0)  # Reset 50 move rule
+        else:
+            HMC += 1
+            position.set_HMC(HMC)
 
         # Make the move
         board = position.get_board()
         board[y2][x2] = board[y][x]
         board[y][x] = 0
 
+        # Check if the move caused checkmate or stalemate
+        player_moves = all_possible_moves(position, enemy_color)
+        print(player_moves)
+        # position = is_checkmate(position, enemy_color)
+        # position = is_stalemate(position, enemy_color)
+
         # Update position
+        position.set_history(position)
         player = 1 - player
         position.set_board(board)
         position.set_player(player)
         position.set_previous_move([(x, y), (x2, y2)])
         position.set_EPT(-1)
         position.set_castle_rights(castle_right)
+
+        # Check if 3-move repetition is of power
+        for value in position.history.values():
+            if value == 3:
+                position.set_play(False)
+
     else:
         print("Not a valid move, try again!")
     return position
