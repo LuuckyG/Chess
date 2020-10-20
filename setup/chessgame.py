@@ -3,10 +3,12 @@ import pygame
 
 from setup.images import Images
 from setup.position import GamePosition
-from pieces.pieces import Piece
-from game_rules.rulebook import RuleBook
-from game_rules.rules import opposite, is_attacked_by, is_captured, is_occupied, is_occupied_by
+from setup.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
 
+from pieces.pieces import Piece
+
+from rules.rulebook import RuleBook
+from rules.rules import is_attacked_by, is_captured, is_occupied, is_occupied_by
 
 
 class ChessGame:
@@ -21,6 +23,8 @@ class ChessGame:
 
         self.square_width = self.all_images.square_width
         self.square_height = self.all_images.square_height
+
+        self.position.create_pieces(self.square_width, self.square_height)
 
     def draw_board(self, right_clicked=[], is_clicked=False, drag_coord=None):
         """Update chess board. Don't update moving piece, indicated by drag_coord"""
@@ -163,48 +167,3 @@ class ChessGame:
         # position = is_checkmate(position, enemy_color)
         # position = is_stalemate(position, enemy_color)
         return False
-
-
-
-
-
-def chess_coord_to_pixels(chess_coord, square_width, square_height):
-    """Get pixel coordinates from chess board coordinates"""
-    x, y = chess_coord
-    return x * square_width, y * square_height
-
-
-def pixel_coord_to_chess(pixel_coord, square_width, square_height):
-    """Get board coordinates from pixel board coordinates"""
-    x, y = pixel_coord
-    return x // square_width, y // square_height
-
-
-def create_pieces(position, square_width, square_height):
-    """Create piece objects based on board position"""
-    board = position.get_board()
-    pieces = {
-        "white": [],
-        "black": []
-    }
-
-    for x in range(8):
-        for y in range(8):
-            if board[x][y] != 0:
-                p = Piece(board[x][y], board[x][y][1], (y, x), square_width, square_height)
-                if board[x][y][1] == 'w':
-                    pieces["white"].append(p)
-                else:
-                    pieces["black"].append(p)
-    return pieces
-
-
-def get_piece(position, square_width, square_height, mouse_coord):
-    """Get piece selected by mouse click"""
-    pieces = create_pieces(position, square_width, square_height)
-    white_pieces, black_pieces = pieces["white"], pieces["black"]
-    pieces = white_pieces + black_pieces
-
-    for piece in pieces:
-        if piece.chess_coord == mouse_coord:
-            return piece

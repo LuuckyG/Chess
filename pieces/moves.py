@@ -1,10 +1,3 @@
-def moves(piece, position, x, y, color):
-
-    
-
-    return valid_moves
-
-
 def valid_piece_move(position, x, y, color, attack_search=False):
     """Check if the piece makes legal move"""
     board = position.get_board()

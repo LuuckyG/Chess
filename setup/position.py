@@ -1,8 +1,11 @@
 import copy
 
+from pieces.pieces import Pawn, Knight, Bishop, Rook, Queen, King
+from setup.utils import position_to_key, pixel_coord_to_chess, chess_coord_to_pixels, opposite
 
 class GamePosition:
-    """Class to store current position on the board"""
+    """Class to store current position on the board and 
+    to keep track of all the pieces on the board."""
 
     BOARD = [['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb'],  # 8
             ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
@@ -34,6 +37,46 @@ class GamePosition:
 
         # Dictionary to check 3-fold repetition.
         self.history = {}
+
+        self.pieces = {"white": [], "black": []}
+    
+    def create_pieces(self, square_width, square_height):
+        """Create piece objects based on board position"""
+
+        for x in range(8):
+            for y in range(8):
+                if self.board[x][y] != 0:
+
+                    symbol = self.board[x][y][0]
+                    color = self.board[x][y][1]
+
+                    if symbol == 'K':
+                        p = King(symbol, color, (y, x), square_width, square_height)
+                    elif symbol == 'Q':
+                        p = Queen(symbol, color, (y, x), square_width, square_height)
+                    elif symbol == 'B':
+                        p = Bishop(symbol, color, (y, x), square_width, square_height)
+                    elif symbol == 'N':
+                        p = Knight(symbol, color, (y, x), square_width, square_height)
+                    elif symbol == 'R':
+                        p = Rook(symbol, color, (y, x), square_width, square_height)
+                    elif symbol == 'P':
+                        p = Pawn(symbol, color, (y, x), square_width, square_height)
+
+                    if color == 'w':
+                        self.pieces["white"].append(p)
+                    else:
+                        self.pieces["black"].append(p)
+
+    def get_piece(self, mouse_coord):
+        """Get piece selected by mouse click"""
+
+        self.white_pieces, self.black_pieces = self.pieces["white"], self.pieces["black"]
+        self.pieces = self.white_pieces + self.black_pieces
+
+        for piece in self.pieces:
+            if piece.chess_coord == mouse_coord:
+                return piece
 
     def get_board(self):
         return self.board
