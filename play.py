@@ -1,17 +1,15 @@
 import pygame
 
-from setup import setup_screen
-from board.setup_board import initialize_board
-from board.setup_board import draw_board
+from setup.chessgame import ChessGame
 
 
 def play():
     pygame.init()
 
-    setup_game()
-
-    screen, position = setup_screen()
-
+    chess_game = ChessGame()
+    
+    chess_game.draw_board()
+    pygame.display.update()
 
     # Game variables
     is_down = False
@@ -21,18 +19,18 @@ def play():
 
     font = pygame.font.SysFont("comicsans", 30, True)
 
-    while position.get_play():
-        pygame.time.Clock().tick(60)  # 60 fps
+    # while position.get_play():
+    #     pygame.time.Clock().tick(60)  # 60 fps
 
-        # Update board position
-        player = position.get_player()
-        board = position.get_board()
+    #     # Update board position
+    #     player = position.get_player()
+    #     board = position.get_board()
 
 
-        # Update display and show last move
-        pygame.display.update()
+    #     # Update display and show last move
+    #     pygame.display.update()
 
-    pygame.quit()
+    # pygame.quit()
 
 
 if __name__ == '__main__':

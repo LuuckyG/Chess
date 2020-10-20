@@ -1,4 +1,3 @@
-"""Class for saving board position and making moves"""
 import copy
 
 
@@ -14,14 +13,14 @@ class GamePosition:
             ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
             ['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw']]  # 1
 
-    def __init__(self, board=BOARD, player=0):
+    def __init__(self, board=BOARD, player=0, castling=[[True, True], [True, True]]):
         self.board = board
 
         # 0 is white, 1 is black
         self.player = player
         
         # Castling rights (King side, Queen side)
-        self.castling = [[True, True], [True, True]]
+        self.castling = castling
         
         # This variable will store a coordinate if there is a square that can be en passant captured
         # on. Otherwise it stores -1, indicating lack of en passant targets
@@ -64,8 +63,8 @@ class GamePosition:
     def get_EPT(self):
         return self.EPT
 
-    def set_EPT(self, EnP_Target):
-        self.EPT = EnP_Target
+    def set_EPT(self, en_passant_target):
+        self.EPT = en_passant_target
 
     def get_previous_move(self):
         return self.previous_move
@@ -100,9 +99,10 @@ class GamePosition:
         parameters but independent of the current object."""
 
         # Independent copy
-        clone = GamePosition(copy.deepcopy(self.board),  
-                             self.player,
-                             copy.deepcopy(self.castling))
+        clone = GamePosition(copy.deepcopy(self.board), 
+                            self.player,
+                            copy.deepcopy(self.castling))
+
         clone.set_EPT(self.EPT)
         clone.set_HMC(self.HMC)
         return clone
