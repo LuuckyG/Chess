@@ -1,13 +1,5 @@
-/.idea/
-/.idea/modules.xml
-/.idea/vcs.xml
-/.idea/NLP.iml
-/.idea/inspectionProfiles/profiles_settings.xml
-/.idea/.gitignore
-/nlp/.idea/inspectionProfiles/profiles_settings.xml
-/nlp/.idea/workspace.xml
-/nlp/.idea/nlp.iml
-/nlp/.idea/misc.xml
-/nlp/.idea/modules.xml
+.idea/
+.vscode/
+__pycache__/
 *.pyc
 *.db
