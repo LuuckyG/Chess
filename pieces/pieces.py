@@ -1,5 +1,7 @@
 from setup.utils import opposite
 
+from rules.rules import is_occupied, is_occupied_by
+
 class Piece:
     """Base class for all pieces"""
     def __init__(self, symbol, color, chess_coord, square_width, square_height):
@@ -45,16 +47,15 @@ class Piece:
     def horizontal_moves(self, board, max_range, enemy_color):
         """Check all horizontal squares the piece can move to, and
         possibly capture another piece."""
-        
-        self.valid_moves = []
 
         for dx in self.direction:
+            x_possible = self.x
             
-            x_possible = self.x + dx
-            
-            while True:
-                if 0 <= x_possible <= max_range:
+            for _ in range(max_range): 
+                
+                x_possible += dx
 
+                if 0 <= x_possible <= 7:
                     # Check if square is empty
                     if not is_occupied(board, x_possible, self.y):
                         self.valid_moves.append((x_possible, self.y))
@@ -63,24 +64,21 @@ class Piece:
                         if is_occupied_by(board, x_possible, self.y, enemy_color):
                             self.valid_moves.append((x_possible, self.y))
 
-                    x_possible += dx
-
                 else:
                     break
 
-    def vertical_moves(self,board, max_range, enemy_color):
+    def vertical_moves(self, board, max_range, enemy_color):
         """Check all vertical squares the piece can move to, and
         possibly capture another piece."""
         
-        self.valid_moves = []
-        
         for dy in self.direction:
+            y_possible = self.y
 
-            y_possible = self.y + dy
+            for _ in range(max_range):
+                
+                y_possible += dy
 
-            while True:
-                if 0 <= y_possible <= max_range:
-
+                if 0 <= y_possible <= 7:
                     # Check if square is empty
                     if not is_occupied(board, self.x, y_possible):
                         self.valid_moves.append((self.x, y_possible))
@@ -89,24 +87,23 @@ class Piece:
                         if is_occupied_by(board, self.x, y_possible, enemy_color):
                             self.valid_moves.append((self.x, y_possible))
 
-                    y_possible += dy
-
                 else:
                     break
 
     def diagonal_moves(self, board, max_range, enemy_color):
         """Check all diagonal squares the piece can move to, and
         possibly capture another piece."""
-        
-        self.valid_moves = []
 
         for d in self.direction:
-            x_possible = self.x + d
-            y_possible = self.y + d
+            x_possible = self.x
+            y_possible = self.y
 
-            while True:
+            for _ in range(max_range):
+                x_possible += d
+                y_possible += d
+
                 # Check first diagonal
-                if 0 <= x_possible <= max_range and 0 <= y_possible <= max_range:
+                if 0 <= x_possible <= 7 and 0 <= y_possible <= 7:
 
                     # Check if square is empty
                     if not is_occupied(board, x_possible, y_possible):  
@@ -116,20 +113,19 @@ class Piece:
                         if is_occupied_by(board, x_possible, y_possible, enemy_color):
                             self.valid_moves.append((x_possible, y_possible))
 
-                    x_possible += d
-                    y_possible += d
-
                 else:
                     break
 
             # Reset search square
-            x_possible = self.x + d
-            y_opposite = self.y - d
+            x_possible = self.x
+            y_opposite = self.y
 
-            while True:
-                # Check second diagonal
-                if 0 <= x_possible <= max_range and 0 <= y_opposite <= max_range:
+            # Check second diagonal
+            for _ in range(max_range):
+                x_possible += d
+                y_opposite -= d
 
+                if 0 <= x_possible <= 7 and 0 <= y_opposite <= 7:
                     # Check if square is empty
                     if not is_occupied(board, x_possible, y_opposite):
                         self.valid_moves.append((x_possible, y_opposite))
@@ -137,9 +133,6 @@ class Piece:
                         # Check for possible capture
                         if is_occupied_by(board, x_possible, y_opposite, enemy_color):
                             self.valid_moves.append((x_possible, y_opposite))
-
-                    x_possible += d
-                    y_opposite -= d
 
                 else:
                     break       
@@ -150,7 +143,7 @@ class Pawn(Piece):
 
     def __init__(self, symbol, color, chess_coord, square_width, square_height):
         
-        super().__init__(self, symbol, color, chess_coord, square_width, square_height)
+        super().__init__(symbol, color, chess_coord, square_width, square_height)
         
         self.index = 5
         self.set_value_table()
@@ -171,6 +164,7 @@ class Pawn(Piece):
         board = position.get_board()
         enemy_color = opposite(self.color)
         previous_move = position.get_previous_move()
+        self.valid_moves = []
 
         # Pawn Movement       
         if self.color == 'w':
@@ -228,7 +222,7 @@ class Knight(Piece):
     """Class for knights"""
     
     def __init__(self, name, color, chess_coord, square_width, square_height):
-        super().__init__(self, name, color, chess_coord, square_width, square_height)
+        super().__init__(name, color, chess_coord, square_width, square_height)
         self.index = 3
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -249,6 +243,7 @@ class Knight(Piece):
         
         board = position.get_board()
         enemy_color = opposite(self.color)
+        self.valid_moves = []
         
         for dx in self.direction:
             # Possible squares that are +1/-1 in x, +2/-2 in y away from original square
@@ -285,7 +280,7 @@ class Bishop(Piece):
     """Class for pawn bishops"""
 
     def __init__(self, name, color, chess_coord, square_width, square_height):
-        super().__init__(self, name, color, chess_coord, square_width, square_height)
+        super().__init__(name, color, chess_coord, square_width, square_height)
         self.index = 2
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -303,6 +298,7 @@ class Bishop(Piece):
     
     def moves(self, position):
         board = position.get_board()
+        self.valid_moves = []
         self.diagonal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
 
 
@@ -310,7 +306,7 @@ class Rook(Piece):
     """Class for rooks"""
     
     def __init__(self, name, color, chess_coord, square_width, square_height):
-        super().__init__(self, name, color, chess_coord, square_width, square_height)
+        super().__init__(name, color, chess_coord, square_width, square_height)
         self.index = 4
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -328,6 +324,7 @@ class Rook(Piece):
 
     def moves(self, position):
         board = position.get_board()
+        self.valid_moves = []
         self.horizontal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
         self.vertical_moves(board=board, max_range=7, enemy_color=opposite(self.color))
 
@@ -336,7 +333,7 @@ class Queen(Piece):
     """Class for the queen"""
     
     def __init__(self, name, color, chess_coord, square_width, square_height):
-        super().__init__(self, name, color, chess_coord, square_width, square_height)
+        super().__init__(name, color, chess_coord, square_width, square_height)
         self.index = 1
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -354,6 +351,7 @@ class Queen(Piece):
 
     def moves(self, position):
         board = position.get_board()
+        self.valid_moves = []
         self.horizontal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
         self.vertical_moves(board=board, max_range=7, enemy_color=opposite(self.color))
         self.diagonal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
@@ -363,7 +361,7 @@ class King(Piece):
     """Class for the king"""
     
     def __init__(self, name, color, chess_coord, square_width, square_height):
-        super().__init__(self, name, color, chess_coord, square_width, square_height)
+        super().__init__(name, color, chess_coord, square_width, square_height)
         self.index = 0
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -393,6 +391,8 @@ class King(Piece):
         """For the king, one need to checks the 8 surrounding squares, for being in check, and castling options."""
         
         board = position.get_board()
+
+        self.valid_moves = []
         self.horizontal_moves(board=board, max_range=1, enemy_color=opposite(self.color))
         self.vertical_moves(board=board, max_range=1, enemy_color=opposite(self.color))
         self.diagonal_moves(board=board, max_range=1, enemy_color=opposite(self.color))

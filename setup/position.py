@@ -67,6 +67,7 @@ class GamePosition:
                         self.pieces["white"].append(p)
                     else:
                         self.pieces["black"].append(p)
+        return self.pieces
 
     def get_piece(self, mouse_coord):
         """Get piece selected by mouse click"""

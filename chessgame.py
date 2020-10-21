@@ -24,15 +24,12 @@ class ChessGame:
         self.square_width = self.all_images.square_width
         self.square_height = self.all_images.square_height
 
-        self.position.create_pieces(self.square_width, self.square_height)
+        self.pieces = self.position.create_pieces(self.square_width, self.square_height)
 
     def draw_board(self, right_clicked=[], is_clicked=False, drag_coord=None):
         """Update chess board. Don't update moving piece, indicated by drag_coord"""
         previous_move = self.position.get_previous_move()
         self.screen.blit(self.all_images.background, (0, 0))
-        player = self.position.get_player()
-        pieces = create_pieces(self.position, self.square_width, self.square_height)
-        w_pieces, b_pieces = pieces["white"], pieces["black"]
 
         # Show square
         mouse_pos = pygame.mouse.get_pos()
@@ -54,37 +51,22 @@ class ChessGame:
         elif is_clicked:
             pass
 
-        # pygame.draw.polygon(screen, (225, 0, 0),
-        #                     ((0, 100), (0, 200), (200, 200), (200, 300),
-        #                      (300, 150), (200, 0), (200, 100)))
-
         # Blit over other pieces
-        if player == 1:  # Player is black
-            order = [w_pieces, b_pieces]
-        else:
-            order = [b_pieces, w_pieces]
+        order = [self.pieces["white"], self.pieces["black"]] if self.position.get_player() == 1 \
+            else [self.pieces["black"], self.pieces["white"]]
 
-        for piece in order[0]:
-            chess_coord, color, subsection, pos = piece.get_info()
-            pixel_coord = chess_coord_to_pixels(chess_coord, self.square_width, self.square_height)
-            if chess_coord != drag_coord:  # Don't blit moving piece
-                if pos == (-1, -1):
-                    # Default square
-                    self.screen.blit(self.all_images.pieces_image, pixel_coord, subsection)
-                else:
-                    # Specific pixels:
-                    self.screen.blit(self.all_images.pieces_image, pos, subsection)
-
-        for piece in order[1]:
-            chess_coord, color, subsection, pos = piece.get_info()
-            pixel_coord = chess_coord_to_pixels(chess_coord, self.square_width, self.square_height)
-            if chess_coord != drag_coord:  # Don't blit moving piece
-                if pos == (-1, -1):
-                    # Default square
-                    self.screen.blit(self.all_images.pieces_image, pixel_coord, subsection)
-                else:
-                    # Specific pixels:
-                    self.screen.blit(self.all_images.pieces_image, pos, subsection)
+        for piece_color in order:
+            for piece in piece_color:
+                pixel_coord = chess_coord_to_pixels(piece.chess_coord, self.square_width, self.square_height)
+                
+                # Don't blit moving piece
+                if piece.chess_coord != drag_coord:  
+                    if piece.pos == (-1, -1):
+                        # Default square
+                        self.screen.blit(self.all_images.pieces_image, pixel_coord, piece.subsection)
+                    else:
+                        # Specific pixels:
+                        self.screen.blit(self.all_images.pieces_image, pos, piece.subsection)
     
     def check_move(self):
         """Check if move is valid"""
@@ -98,68 +80,70 @@ class ChessGame:
         HMC = self.position.get_HMC()
         in_check = False
 
-        # Check if player is not in check
-        king_position = get_piece_position(self.position, 'K' + color)  # Find position of the king of player
-        attacked_squares = is_attacked_by(position,
-                                        king_position[0], king_position[1],
-                                        enemy_color)  # Check if king is attacked by enemy
+        # # Check if player is not in check
+        # king_position = get_piece_position(self.position, 'K' + color)  # Find position of the king of player
+        # attacked_squares = is_attacked_by(self.position,
+        #                                 king_position[0], king_position[1],
+        #                                 enemy_color)  # Check if king is attacked by enemy
 
-        # Get all valid moves of selected piece of current player
-        valid_moves, position = valid_piece_move(position, x, y, color)
+        # # Get all valid moves of selected piece of current player
+        # valid_moves, self.position = valid_piece_move(self.position, x, y, color)
 
-        # Remove moves that lead to player getting into check
-        # for pieces in attacked_squares:
-        #     if pieces in valid_moves or pieces == (x, y):
-        #         in_check = True
+        # # Remove moves that lead to player getting into check
+        # # for pieces in attacked_squares:
+        # #     if pieces in valid_moves or pieces == (x, y):
+        # #         in_check = True
 
-        if (x2, y2) in valid_moves and not in_check:
-            board = position.get_board()
-            castle_right = position.get_castle_rights()
+        # if (x2, y2) in valid_moves and not in_check:
+        #     board = self.position.get_board()
+        #     castle_right = self.position.get_castle_rights()
 
-            # Check additional move options
-            if board[y][x][0] == 'P':
-                position = en_passant_rights(position, x2, y2)
-                position.set_HMC(0)  # Reset 50 move rule
-                if is_promotion(position, y2):
-                    board[y][x] = 'Q' + 'wb'[player]  # Automatic promotion to queen
-                    position.set_board(board)
-            elif board[y][x][0] == 'K':
-                position = castle_rights(position, x2, y2)
-            elif board[y][x][0] == 'R':
-                if x == 0 and (y == 0 or y == 7) and castle_right[player][0]:
-                    castle_right[player][0] = False
-                elif x == 7 and (y == 0 or y == 7) and castle_right[player][1]:
-                    castle_right[player][1] = False
-                position.set_castle_rights(castle_right)
-            elif is_captured(board, x2, y2):
-                position.set_HMC(0)  # Reset 50 move rule
-            else:
-                HMC += 1
-                position.set_HMC(HMC)
+        #     # Check additional move options
+        #     if board[y][x][0] == 'P':
+        #         self.position = en_passant_rights(self.position, x2, y2)
+        #         self.position.set_HMC(0)  # Reset 50 move rule
+        #         if is_promotion(self.position, y2):
+        #             board[y][x] = 'Q' + 'wb'[player]  # Automatic promotion to queen
+        #             self.position.set_board(board)
+        #     elif board[y][x][0] == 'K':
+        #         self.position = castle_rights(self.position, x2, y2)
+        #     elif board[y][x][0] == 'R':
+        #         if x == 0 and (y == 0 or y == 7) and castle_right[player][0]:
+        #             castle_right[player][0] = False
+        #         elif x == 7 and (y == 0 or y == 7) and castle_right[player][1]:
+        #             castle_right[player][1] = False
+        #         self.position.set_castle_rights(castle_right)
+        #     elif is_captured(board, x2, y2):
+        #         self.position.set_HMC(0)  # Reset 50 move rule
+        #     else:
+        #         HMC += 1
+        #         self.position.set_HMC(HMC)
 
-            # Make the move
-            board = position.get_board()
-            board[y2][x2] = board[y][x]
-            board[y][x] = 0
+        #     # Make the move
+        #     board[y2][x2] = board[y][x]
+        #     board[y][x] = 0
 
-            # Update position
-            position.set_history(position)
-            player = 1 - player
-            position.set_board(board)
-            position.set_player(player)
-            position.set_previous_move([(x, y), (x2, y2)])
-            position.set_EPT(-1)
-            position.set_castle_rights(castle_right)
+        #     # Update position
+        #     self.update(self.position, board, player, (x, y), (x2, y2), castle_right)
 
-            # Check if 3-move repetition is of power
-            for value in position.history.values():
-                if value == 3:
-                    position.set_play(False)
+        #     # Check if 3-move repetition is of power
+        #     for value in self.position.history.values():
+        #         if value == 3:
+        #             self.position.set_play(False)
             
-            # Check for checkmate or stalemate
-            self.check_end_game()
+        #     # Check for checkmate or stalemate
+        #     self.check_end_game()
 
-        return position
+        # return self.position
+
+    def update(self, position, board, player, orig_coord, new_coord, castle_right):
+        """Update the position with the move made"""
+        self.position.set_history(self.position)
+        self.position.set_board(board)
+        self.position.set_player(1 - player)
+        self.position.set_previous_move([orig_coord, new_coord])
+        self.position.set_EPT(-1)
+        self.position.set_castle_rights(castle_right)
 
     def check_end_game(self):
         """Check if move causes game to end with checkmate or stalemate"""

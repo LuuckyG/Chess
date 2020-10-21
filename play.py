@@ -1,6 +1,6 @@
 import pygame
 
-from setup.chessgame import ChessGame
+from chessgame import ChessGame
 
 
 def play():
@@ -32,6 +32,13 @@ def play():
 
     # pygame.quit()
 
+    for color in chess_game.pieces:
+        for piece in chess_game.pieces[color]:
+            piece.moves(chess_game.position)
+            print(piece.symbol + piece.color, '-', piece.chess_coord , '-', piece.valid_moves)
+
+    for row in chess_game.position.board:
+        print(row)
 
 if __name__ == '__main__':
     play()
