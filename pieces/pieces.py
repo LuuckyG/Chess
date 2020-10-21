@@ -63,6 +63,8 @@ class Piece:
                         # Check for possible capture
                         if is_occupied_by(board, x_possible, self.y, enemy_color):
                             self.valid_moves.append((x_possible, self.y))
+                        else:
+                            break
 
                 else:
                     break
@@ -86,6 +88,8 @@ class Piece:
                         # Check for possible capture
                         if is_occupied_by(board, self.x, y_possible, enemy_color):
                             self.valid_moves.append((self.x, y_possible))
+                        else:
+                            break
 
                 else:
                     break
@@ -112,6 +116,8 @@ class Piece:
                         # Check for possible capture
                         if is_occupied_by(board, x_possible, y_possible, enemy_color):
                             self.valid_moves.append((x_possible, y_possible))
+                        else:
+                            break
 
                 else:
                     break
@@ -133,6 +139,8 @@ class Piece:
                         # Check for possible capture
                         if is_occupied_by(board, x_possible, y_opposite, enemy_color):
                             self.valid_moves.append((x_possible, y_opposite))
+                        else:
+                            break
 
                 else:
                     break       
