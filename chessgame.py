@@ -5,16 +5,10 @@ from setup.images import Images
 from setup.position import GamePosition
 from setup.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
 
-from pieces.pieces import Piece
-
-from rules.rulebook import RuleBook
-from rules.rules import is_attacked_by, is_captured, is_occupied, is_occupied_by
-
 
 class ChessGame:
 
     def __init__(self):
-        self.rulebook = RuleBook()
         self.position = GamePosition()
         
         self.all_images = Images()
@@ -24,7 +18,7 @@ class ChessGame:
         self.square_width = self.all_images.square_width
         self.square_height = self.all_images.square_height
 
-        self.pieces = self.position.create_pieces(self.square_width, self.square_height)
+        self.position.create_pieces(self.square_width, self.square_height)
 
     def draw_board(self, right_clicked=[], is_clicked=False, drag_coord=None):
         """Update chess board. Don't update moving piece, indicated by drag_coord"""
@@ -52,8 +46,8 @@ class ChessGame:
             pass
 
         # Blit over other pieces
-        order = [self.pieces["white"], self.pieces["black"]] if self.position.get_player() == 1 \
-            else [self.pieces["black"], self.pieces["white"]]
+        order = [self.position.pieces["white"], self.position.pieces["black"]] if self.position.get_player() == 1 \
+            else [self.position.pieces["black"], self.position.pieces["white"]]
 
         for piece_color in order:
             for piece in piece_color:
@@ -78,7 +72,23 @@ class ChessGame:
         color = 'wb'[player]
         enemy_color = opposite(color)
         HMC = self.position.get_HMC()
-        in_check = False
+
+        king_position = self.position.get_piece_position('K' + color)
+        king = self.position.get_piece(king_position)
+        
+        if king.is_checkmate() or king.is_stalemate() or self.position.resignation(color):
+            # return play = False
+            pass
+        elif king.is_check():
+            pass
+        elif king.is_pinned():
+            # Find pinned piece and remove moves from possible moves
+            pass
+        else:
+            # Player can move everywhere, except the king into attacked squares
+
+            # reset attacked squares
+            self.position.reset_attacking_squares()
 
         # # Check if player is not in check
         # king_position = get_piece_position(self.position, 'K' + color)  # Find position of the king of player
@@ -147,7 +157,7 @@ class ChessGame:
 
     def check_end_game(self):
         """Check if move causes game to end with checkmate or stalemate"""
-        player_moves = all_possible_moves(position, enemy_color)
+        # player_moves = all_possible_moves(position, enemy_color)
         # position = is_checkmate(position, enemy_color)
         # position = is_stalemate(position, enemy_color)
         return False

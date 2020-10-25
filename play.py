@@ -32,10 +32,13 @@ def play():
 
     # pygame.quit()
 
-    for color in chess_game.pieces:
-        for piece in chess_game.pieces[color]:
+    for color in chess_game.position.pieces:
+        for piece in chess_game.position.pieces[color]:
             piece.moves(chess_game.position)
-            print(piece.symbol + piece.color, '-', piece.chess_coord , '-', piece.valid_moves)
+
+            # chess_game.position.reset_attacking_squares()
+            print(piece.symbol + piece.color, '-', piece.chess_coord , '-', piece.valid_moves, '-', 
+            piece.attacks['direct'], '-', piece.attacks['indirect'], '-', piece.attacked_by['direct'], '-', piece.attacked_by['indirect'])
 
     for row in chess_game.position.board:
         print(row)

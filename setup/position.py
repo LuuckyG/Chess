@@ -1,6 +1,6 @@
 import copy
 
-from pieces.pieces import Pawn, Knight, Bishop, Rook, Queen, King
+from pieces.pieces import Pawn, Knight, Bishop, Rook, Queen, King, Empty
 from setup.utils import position_to_key, pixel_coord_to_chess, chess_coord_to_pixels, opposite
 
 class GamePosition:
@@ -31,6 +31,7 @@ class GamePosition:
 
         self.previous_move = [(-1, -1), (-1, -1)]
         self.play = True
+        self.winner = 'Nobody'
 
         # Detect draw if there are 50 moves without any capture or pawn movement
         self.HMC = 0
@@ -39,6 +40,24 @@ class GamePosition:
         self.history = {}
 
         self.pieces = {"white": [], "black": []}
+        self.empty_squares = []
+    
+    def end_of_game(self, king, color):
+        """Check game ending situations"""
+        if self.resignation or king.is_checkmate():
+            self.set_play(False)
+            self.winner = opposite(color)
+        elif self.is_draw or king.is_stalemate():
+            self.game_winner = 'Draw'
+            self.set_play(False)
+            
+    def is_draw(self):
+        """Check if players agreed to a draw"""
+        return False
+
+    def resignation(self, color):
+        """Check if current player resigned"""
+        return False
     
     def create_pieces(self, square_width, square_height):
         """Create piece objects based on board position"""
@@ -63,21 +82,58 @@ class GamePosition:
                     elif symbol == 'P':
                         p = Pawn(symbol, color, (y, x), square_width, square_height)
 
-                    if color == 'w':
-                        self.pieces["white"].append(p)
-                    else:
-                        self.pieces["black"].append(p)
+                    self.pieces["white"].append(p) if color == 'w' else self.pieces["black"].append(p)
+                    
+                else:
+                    empty_square = Empty((y,x))
+                    self.empty_squares.append(empty_square)
+
         return self.pieces
 
-    def get_piece(self, mouse_coord):
+    def get_piece(self, mouse_coord, empty=False):
         """Get piece selected by mouse click"""
 
         self.white_pieces, self.black_pieces = self.pieces["white"], self.pieces["black"]
-        self.pieces = self.white_pieces + self.black_pieces
 
-        for piece in self.pieces:
-            if piece.chess_coord == mouse_coord:
-                return piece
+        if not empty:
+            for color in self.pieces:
+                for piece in self.pieces[color]:
+                    if piece.chess_coord == mouse_coord:
+                        return piece
+        else:
+            for square in self.empty_squares:
+                if square.chess_coord == mouse_coord:
+                    return square
+    
+    def get_piece_position(self, piece):
+        for x in range(8):
+            for y in range(8):
+                if self.board[y][x] == piece:
+                    return x, y
+    
+    def reset_attacking_squares(self):
+        for color in self.pieces:
+            for piece in self.pieces[color]:
+                piece.attacks['direct'] = []
+                piece.attacks['indirect'] = []
+
+                piece.attacked_by['direct'] = []
+                piece.attacked_by['indirect'] = []
+        
+        for square in self.empty_squares:
+            square.attacked_by['direct'] = []
+            square.attacked_by['indirect'] = []
+
+    def is_occupied(self, x, y):
+        """Check if selected board tile is empty or not"""
+        return self.board[y][x] != 0
+
+    def is_occupied_by_enemy(self, x, y, color):
+        """Check if selected board tile has a piece of the opponent"""
+        if self.board[y][x] != 0:
+            if self.board[y][x][1] == color:  # Space occupied by enemy piece
+                return True
+        return False
 
     def get_board(self):
         return self.board

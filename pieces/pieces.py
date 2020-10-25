@@ -1,6 +1,14 @@
 from setup.utils import opposite
 
-from rules.rules import is_occupied, is_occupied_by
+
+class Empty:
+    """Class for empty squares"""
+    def __init__(self, chess_coord):       
+        self.x = chess_coord[0]
+        self.y = chess_coord[1]
+        self.chess_coord = chess_coord
+        self.attacked_by = {'direct': [], 'indirect': []}
+
 
 class Piece:
     """Base class for all pieces"""
@@ -8,10 +16,15 @@ class Piece:
 
         self.symbol = symbol
         self.color = color
+        self.enemy_color = opposite(self.color)
         
         self.x = chess_coord[0]
         self.y = chess_coord[1]
         self.chess_coord = chess_coord
+
+        self.is_pinned = False
+        self.attacks = {'direct': [], 'indirect': []}
+        self.attacked_by = {'direct': [], 'indirect': []}
 
         # Used to search in opposite directions around the pieces
         self.direction = [-1, 1]
@@ -44,63 +57,72 @@ class Piece:
     def get_piece_value(self):
         return self.value
     
-    def horizontal_moves(self, board, max_range, enemy_color):
+    # def is_pinned(self):
+    #     """King is pinned by enemy, meaning current piece cannot move"""
+    #     return False
+    
+    def check_square(self, position, x, y, direct_attack):
+
+        attack_type = 'direct' if direct_attack else 'indirect'
+
+        # Check if square is empty
+        if not position.is_occupied(x, y):
+            self.valid_moves.append((x, y))
+            empty_square = position.get_piece((x, y), empty=True)
+            empty_square.attacked_by[attack_type].append(self)
+        else:
+            # Check for possible capture
+            if position.is_occupied_by_enemy(x, y, self.enemy_color):
+                attacked_piece = position.get_piece((x, y))
+                attacked_piece.attacked_by[attack_type].append(self)
+                
+                self.valid_moves.append((x, y))
+                self.attacks[attack_type].append(attacked_piece)
+                return False
+        return True
+    
+    def horizontal_moves(self, position, max_range):
         """Check all horizontal squares the piece can move to, and
         possibly capture another piece."""
 
         for dx in self.direction:
             x_possible = self.x
-            
+            direct_attack = True
+
             for _ in range(max_range): 
                 
                 x_possible += dx
 
                 if 0 <= x_possible <= 7:
-                    # Check if square is empty
-                    if not is_occupied(board, x_possible, self.y):
-                        self.valid_moves.append((x_possible, self.y))
-                    else:
-                        # Check for possible capture
-                        if is_occupied_by(board, x_possible, self.y, enemy_color):
-                            self.valid_moves.append((x_possible, self.y))
-                        else:
-                            break
-
+                    direct_attack = self.check_square(position, x_possible, self.y, direct_attack)
                 else:
                     break
 
-    def vertical_moves(self, board, max_range, enemy_color):
+    def vertical_moves(self, position, max_range):
         """Check all vertical squares the piece can move to, and
         possibly capture another piece."""
         
         for dy in self.direction:
             y_possible = self.y
+            direct_attack = True
 
             for _ in range(max_range):
                 
                 y_possible += dy
 
                 if 0 <= y_possible <= 7:
-                    # Check if square is empty
-                    if not is_occupied(board, self.x, y_possible):
-                        self.valid_moves.append((self.x, y_possible))
-                    else:
-                        # Check for possible capture
-                        if is_occupied_by(board, self.x, y_possible, enemy_color):
-                            self.valid_moves.append((self.x, y_possible))
-                        else:
-                            break
-
+                    direct_attack = self.check_square(position, self.x, y_possible, direct_attack)
                 else:
                     break
 
-    def diagonal_moves(self, board, max_range, enemy_color):
+    def diagonal_moves(self, position, max_range):
         """Check all diagonal squares the piece can move to, and
         possibly capture another piece."""
 
         for d in self.direction:
             x_possible = self.x
             y_possible = self.y
+            direct_attack = True
 
             for _ in range(max_range):
                 x_possible += d
@@ -108,23 +130,14 @@ class Piece:
 
                 # Check first diagonal
                 if 0 <= x_possible <= 7 and 0 <= y_possible <= 7:
-
-                    # Check if square is empty
-                    if not is_occupied(board, x_possible, y_possible):  
-                        self.valid_moves.append((x_possible, y_possible))
-                    else:
-                        # Check for possible capture
-                        if is_occupied_by(board, x_possible, y_possible, enemy_color):
-                            self.valid_moves.append((x_possible, y_possible))
-                        else:
-                            break
-
+                    direct_attack = self.check_square(position, x_possible, y_possible, direct_attack)
                 else:
                     break
 
             # Reset search square
             x_possible = self.x
             y_opposite = self.y
+            direct_attack = True
 
             # Check second diagonal
             for _ in range(max_range):
@@ -132,18 +145,9 @@ class Piece:
                 y_opposite -= d
 
                 if 0 <= x_possible <= 7 and 0 <= y_opposite <= 7:
-                    # Check if square is empty
-                    if not is_occupied(board, x_possible, y_opposite):
-                        self.valid_moves.append((x_possible, y_opposite))
-                    else:
-                        # Check for possible capture
-                        if is_occupied_by(board, x_possible, y_opposite, enemy_color):
-                            self.valid_moves.append((x_possible, y_opposite))
-                        else:
-                            break
-
+                    direct_attack = self.check_square(position, x_possible, y_opposite, direct_attack)
                 else:
-                    break       
+                    break
 
 
 class Pawn(Piece):
@@ -170,8 +174,8 @@ class Pawn(Piece):
     
     def moves(self, position):
         board = position.get_board()
-        enemy_color = opposite(self.color)
         previous_move = position.get_previous_move()
+        
         self.valid_moves = []
 
         # Pawn Movement       
@@ -182,20 +186,20 @@ class Pawn(Piece):
             self.direction = [1]
             max_range = 2 if self.y == 1 else 1
         
-        self.vertical_moves(board=board, max_range=max_range, enemy_color=enemy_color)
+        self.vertical_moves(position=position, max_range=max_range)
 
 
         #### Pawn Captures ####
         # White pawns
-        if self.x != 0 and is_occupied_by(board, self.x - 1, self.y - 1, enemy_color):
+        if self.x != 0 and position.is_occupied_by_enemy(self.x - 1, self.y - 1, self.enemy_color):
             self.valid_moves.append((self.x - 1, self.y - 1))
-        if self.x != 7 and is_occupied_by(board, self.x + 1, self.y - 1, enemy_color):
+        if self.x != 7 and position.is_occupied_by_enemy(self.x + 1, self.y - 1, self.enemy_color):
             self.valid_moves.append((self.x + 1, self.y - 1))
 
         # Black pawns
-        if self.x != 0 and is_occupied_by(board, self.x - 1, self.y + 1, enemy_color):
+        if self.x != 0 and position.is_occupied_by_enemy(self.x - 1, self.y + 1, self.enemy_color):
             self.valid_moves.append((self.x - 1, self.y + 1))
-        if self.x != 7 and is_occupied_by(board, self.x + 1, self.y + 1, enemy_color):
+        if self.x != 7 and position.is_occupied_by_enemy(self.x + 1, self.y + 1, self.enemy_color):
             self.valid_moves.append((self.x + 1, self.y + 1))
 
 
@@ -224,6 +228,21 @@ class Pawn(Piece):
 
         #### PROMOTION ####
         # TO DO!
+        # def is_promotion(position, y):
+        #     return y == position.get_player() * 7
+
+        # def en_passant_rights(position, x, y):
+        #     """If en passant captured, update board by removing captured pawn."""
+        #     player = position.get_player()
+        #     board = position.get_board()
+        #     en_passant_target = position.get_EPT()
+
+        #     if (x, y) == en_passant_target and 'wb'[player] == 'w':
+        #         board[y + 1][x] = 0
+        #     elif (x, y) == en_passant_target and 'wb'[player] == 'b':
+        #         board[y - 1][x] = 0
+        #     position.set_board(board)
+        #     return position
 
     
 class Knight(Piece):
@@ -248,9 +267,7 @@ class Knight(Piece):
 
     def moves(self, position):
         """A knight can either move +2/-2 in x direction and +1/-1 in y direction, or the other way around"""
-        
-        board = position.get_board()
-        enemy_color = opposite(self.color)
+
         self.valid_moves = []
         
         for dx in self.direction:
@@ -262,10 +279,10 @@ class Knight(Piece):
                 for dy in self.direction:
                     y_possible = self.y + 2 * dy
                     if 0 <= y_possible <= 7:
-                        if not is_occupied(board, x_possible, y_possible):
+                        if not position.is_occupied(x_possible, y_possible):
                             self.valid_moves.append((x_possible, y_possible))
                         else:
-                            if is_occupied_by(board, x_possible, y_possible, enemy_color):
+                            if position.is_occupied_by_enemy(x_possible, y_possible, self.enemy_color):
                                 self.valid_moves.append((x_possible, y_possible))
 
         for dy in self.direction:
@@ -277,10 +294,10 @@ class Knight(Piece):
                 for dx in self.direction:
                     x_possible = self.x + 2 * dx
                     if 0 <= x_possible <= 7:
-                        if not is_occupied(board, x_possible, y_possible):
+                        if not position.is_occupied(x_possible, y_possible):
                             self.valid_moves.append((x_possible, y_possible))
                         else:
-                            if is_occupied_by(board, x_possible, y_possible, enemy_color):
+                            if position.is_occupied_by_enemy(x_possible, y_possible, self.enemy_color):
                                 self.valid_moves.append((x_possible, y_possible))
 
 
@@ -305,9 +322,8 @@ class Bishop(Piece):
                             [-20, -10, -90, -10, -10, -90, -10, -20]]
     
     def moves(self, position):
-        board = position.get_board()
         self.valid_moves = []
-        self.diagonal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
+        self.diagonal_moves(position=position, max_range=7)
 
 
 class Rook(Piece):
@@ -331,10 +347,9 @@ class Rook(Piece):
                             [0, 0, 0, 5, 5, 0, 0, 0]]
 
     def moves(self, position):
-        board = position.get_board()
         self.valid_moves = []
-        self.horizontal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
-        self.vertical_moves(board=board, max_range=7, enemy_color=opposite(self.color))
+        self.horizontal_moves(position=position, max_range=7)
+        self.vertical_moves(position=position, max_range=7)
 
 
 class Queen(Piece):
@@ -358,11 +373,10 @@ class Queen(Piece):
                             [-20, -10, -10, 70, -5, -10, -10, -20]]
 
     def moves(self, position):
-        board = position.get_board()
         self.valid_moves = []
-        self.horizontal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
-        self.vertical_moves(board=board, max_range=7, enemy_color=opposite(self.color))
-        self.diagonal_moves(board=board, max_range=7, enemy_color=opposite(self.color))
+        self.horizontal_moves(position=position, max_range=7)
+        self.vertical_moves(position=position, max_range=7)
+        self.diagonal_moves(position=position, max_range=7)
         
 
 class King(Piece):
@@ -397,13 +411,11 @@ class King(Piece):
 
     def moves(self, position):
         """For the king, one need to checks the 8 surrounding squares, for being in check, and castling options."""
-        
         board = position.get_board()
-
         self.valid_moves = []
-        self.horizontal_moves(board=board, max_range=1, enemy_color=opposite(self.color))
-        self.vertical_moves(board=board, max_range=1, enemy_color=opposite(self.color))
-        self.diagonal_moves(board=board, max_range=1, enemy_color=opposite(self.color))
+        self.horizontal_moves(position=position, max_range=1)
+        self.vertical_moves(position=position, max_range=1)
+        self.diagonal_moves(position=position, max_range=1)
 
         # Castling options
         castle_right = position.get_castle_rights()
@@ -426,3 +438,46 @@ class King(Piece):
             if castle_right[1][1]:
                 if board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
                     self.valid_moves.append((2, 0))
+
+    # def castle_rights(position, x, y):
+    #     player = position.get_player()
+    #     board = position.get_board()
+    #     castle_right = position.get_castle_rights()
+
+    #     if (x, y) == (2, (1 - player) * 7):
+    #         # Queenside
+    #         board[(1 - player) * 7][3] = board[(1 - player) * 7][0]
+    #         board[(1 - player) * 7][0] = 0
+    #         castle_right[player][0] = castle_right[player][1] = False
+    #     elif (x, y) == (6, (1 - player) * 7):
+    #         # Kingside
+    #         board[(1 - player) * 7][5] = board[(1 - player) * 7][7]
+    #         board[(1 - player) * 7][7] = 0
+    #         castle_right[player][0] = castle_right[player][1] = False
+
+    #     position.set_castle_rights(castle_right)
+    #     position.set_board(board)
+    #     return position
+
+    # def is_pinned(self):
+    #     if len(king.attacked_by['indirect']) >= 1:
+    #         return True
+
+    def in_check(self):
+        return len(self.attacked_by['direct']) >= 1
+
+    def is_checkmate(self):
+        if self.in_check():
+            for square in self.valid_moves:
+                if not square.attacked_by['direct']:
+                    return False
+            return True
+        return False
+
+    def is_stalemate(self):
+        if not self.in_check():
+            for square in self.valid_moves:
+                if not square.attacked_by['direct']:
+                    return False
+            return True
+        return False
