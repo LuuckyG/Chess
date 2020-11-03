@@ -20,6 +20,7 @@ class Board:
     def __init__(self, square_width, square_height):
         self.square_width = square_width
         self.square_height = square_height
+        self.captured_pieces = []
         self.setup()
     
 
