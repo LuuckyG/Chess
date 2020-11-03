@@ -1,47 +1,44 @@
 import pygame
+from pygame.locals import QUIT, MOUSEBUTTONUP, MOUSEMOTION, K_q
 
-from chessgame import ChessGame
+from controller.chess import Chess
 
 
 def play():
-    pygame.init()
+    """The main game loop"""
+    chess = Chess()
+    view = chess.view
 
-    chess_game = ChessGame()
-    
-    chess_game.draw_board()
-    pygame.display.update()
+    while getattr(chess, 'play'):
+        pygame.display.update()
 
-    # Game variables
-    is_down = False
-    is_clicked = False
-    is_transition = False
-    is_right_clicked = []
+        for event in pygame.event.get():
+            if event.type == QUIT or pygame.key.get_pressed()[K_q]:
+                chess.play = False
+                pygame.quit()
+                break
+            
+            # Start and settings screens
+            if getattr(chess, 'status') != 'game':
+                if event.type == MOUSEMOTION:
+                    x, y = event.pos
+                    view.follow_mouse(x, y)
+                
+                elif event.type == MOUSEBUTTONUP:
+                    x, y = event.pos
+                    chess.process_click(x, y)
 
-    font = pygame.font.SysFont("comicsans", 30, True)
+            # During the game
+            if getattr(chess, 'status') == 'game':
+                player = chess.current_player
 
-    # while position.get_play():
-    #     pygame.time.Clock().tick(60)  # 60 fps
+                if getattr(player, 'player_type') == 'AI':
+                    chess.ai_move()
 
-    #     # Update board position
-    #     player = position.get_player()
-    #     board = position.get_board()
+                elif event.type == MOUSEBUTTONUP:
+                    x, y = event.pos
+                    chess.process_click(x, y)
 
+            view.draw_screens(getattr(chess, 'status'))
 
-    #     # Update display and show last move
-    #     pygame.display.update()
-
-    # pygame.quit()
-
-    for color in chess_game.position.pieces:
-        for piece in chess_game.position.pieces[color]:
-            piece.moves(chess_game.position)
-
-            # chess_game.position.reset_attacking_squares()
-            print(piece.symbol + piece.color, '-', piece.chess_coord , '-', piece.valid_moves, '-', 
-            piece.attacks['direct'], '-', piece.attacks['indirect'], '-', piece.attacked_by['direct'], '-', piece.attacked_by['indirect'])
-
-    for row in chess_game.position.board:
-        print(row)
-
-if __name__ == '__main__':
-    play()
+if __name__ == "__main__": play()
