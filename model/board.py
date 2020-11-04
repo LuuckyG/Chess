@@ -8,19 +8,23 @@ class Board:
     """Class to store current position on the board and 
     to keep track of all the pieces on the board."""
 
-    START_POSITION = [['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb'],  # 8
-                     ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 6
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 5
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 4
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 3
+    START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
                      ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
-                     ['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw']]  # 1
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 3
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 4
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 5
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 6
+                     ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
+                     ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
+
 
     def __init__(self, square_width, square_height):
         self.square_width = square_width
         self.square_height = square_height
+        
         self.captured_pieces = []
+        self.highlighted_tiles = []
+
         self.setup()
     
 
@@ -37,17 +41,17 @@ class Board:
                     color = self.START_POSITION[y][x][1]
 
                     if symbol == 'K':
-                        piece = King(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = King(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     elif symbol == 'Q':
-                        piece = Queen(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = Queen(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     elif symbol == 'B':
-                        piece = Bishop(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = Bishop(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     elif symbol == 'N':
-                        piece = Knight(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = Knight(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     elif symbol == 'R':
-                        piece = Rook(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = Rook(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     elif symbol == 'P':
-                        piece = Pawn(symbol, color, x, y, self.square_width, self.square_height)
+                        piece = Pawn(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     
                     tile = Tile(x, y, self.square_width, piece)
                     

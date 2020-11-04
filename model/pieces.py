@@ -1,8 +1,9 @@
-from setup.utils import opposite
+from model.utils import opposite
 
 
 class Empty:
     """Class for empty squares"""
+
     def __init__(self, x, y):       
         self.x = x
         self.y = y
@@ -11,6 +12,9 @@ class Empty:
 
 class Piece:
     """Base class for all pieces"""
+
+    LETTERS = 'abcdefgh'
+
     def __init__(self, symbol, color, x, y, square_width, square_height):
 
         self.symbol = symbol
@@ -19,31 +23,37 @@ class Piece:
         
         self.x = x
         self.y = y
+        self.upper_y = 0 if self.color == 'w' else square_height
 
         self.is_pinned = False
+        self.has_moved = False
+
         self.attacks = {'direct': [], 'indirect': []}
         self.attacked_by = {'direct': [], 'indirect': []}
 
-        # Used to search in opposite directions around the pieces
         self.direction = [-1, 1]
+        self.set_coordinate()
 
-        self.value_table = []
 
-        # Determine row in image
-        self.upper_y = 0 if self.color == 'w' else square_height
-            
+    def set_coordinate(self):
+        self.coordinate = self.LETTERS[self.x] + str(8 - self.y)
+
+
     def set_subsection(self, index, square_width, square_height):
         self.left_x = index * square_width
         self.subsection = (self.left_x, self.upper_y, square_width, square_height)
         self.pos = (-1, -1)
 
+
     def set_piece_value(self, value_table):
         self.value = value_table[self.y][self.x]
     
+
     # def is_pinned(self):
     #     """King is pinned by enemy, meaning current piece cannot move"""
     #     return False
     
+
     def check_square(self, position, x, y, direct_attack):
 
         attack_type = 'direct' if direct_attack else 'indirect'
@@ -64,6 +74,7 @@ class Piece:
                 return False
         return True
     
+
     def horizontal_moves(self, position, max_range):
         """Check all horizontal squares the piece can move to, and
         possibly capture another piece."""
@@ -81,6 +92,7 @@ class Piece:
                 else:
                     break
 
+
     def vertical_moves(self, position, max_range):
         """Check all vertical squares the piece can move to, and
         possibly capture another piece."""
@@ -97,6 +109,7 @@ class Piece:
                     direct_attack = self.check_square(position, self.x, y_possible, direct_attack)
                 else:
                     break
+
 
     def diagonal_moves(self, position, max_range):
         """Check all diagonal squares the piece can move to, and
@@ -149,6 +162,7 @@ class Pawn(Piece):
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
     
+
     def set_value_table(self):
         self.value_table = [[0, 0, 0, 0, 0, 0, 0, 0],
                             [50, 50, 50, 50, 50, 50, 50, 50],
@@ -159,6 +173,7 @@ class Pawn(Piece):
                             [5, 10, 10, -20, -20, 10, 10, 5],
                             [0, 0, 0, 0, 0, 0, 0, 0]]
     
+
     def moves(self, position):
         board = position.board
         previous_move = position.get_previous_move()
@@ -243,6 +258,7 @@ class Knight(Piece):
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
 
+
     def set_value_table(self):
         self.value_table = [[-50, -40, -30, -30, -30, -30, -40, -50],
                             [-40, -20, 0, 0, 0, 0, -20, -40],
@@ -252,6 +268,7 @@ class Knight(Piece):
                             [-30, 5, 10, 15, 15, 10, 5, -30],
                             [-40, -20, 0, 5, 5, 0, -20, -40],
                             [-50, -90, -30, -30, -30, -30, -90, -50]]
+
 
     def moves(self, position):
         """A knight can either move +2/-2 in x direction and +1/-1 in y direction, or the other way around"""
@@ -300,6 +317,7 @@ class Bishop(Piece):
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
 
+
     def set_value_table(self):
         self.value_table = [[-20, -10, -10, -10, -10, -10, -10, -20],
                             [-10, 0, 0, 0, 0, 0, 0, -10],
@@ -310,6 +328,7 @@ class Bishop(Piece):
                             [-10, 5, 0, 0, 0, 0, 5, -10],
                             [-20, -10, -90, -10, -10, -90, -10, -20]]
     
+
     def moves(self, position):
         self.valid_moves = []
         self.diagonal_moves(position=position, max_range=7)
@@ -326,6 +345,7 @@ class Rook(Piece):
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
 
+
     def set_value_table(self):
         self.value_table = [[0, 0, 0, 0, 0, 0, 0, 0],
                             [5, 10, 10, 10, 10, 10, 10, 5],
@@ -335,6 +355,7 @@ class Rook(Piece):
                             [-5, 0, 0, 0, 0, 0, 0, -5],
                             [-5, 0, 0, 0, 0, 0, 0, -5],
                             [0, 0, 0, 5, 5, 0, 0, 0]]
+
 
     def moves(self, position):
         self.valid_moves = []
@@ -353,6 +374,7 @@ class Queen(Piece):
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
 
+
     def set_value_table(self):
         self.value_table = [[-20, -10, -10, -5, -5, -10, -10, -20],
                             [-10, 0, 0, 0, 0, 0, 0, -10],
@@ -362,6 +384,7 @@ class Queen(Piece):
                             [-10, 5, 5, 5, 5, 5, 0, -10],
                             [-10, 0, 5, 0, 0, 0, 0, -10],
                             [-20, -10, -10, 70, -5, -10, -10, -20]]
+
 
     def moves(self, position):
         self.valid_moves = []
@@ -377,9 +400,11 @@ class King(Piece):
         super().__init__(name, color, x, y, square_width, square_height)
         self.index = 0
         self.points = 9999
+        self.castling = [True, True]
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
+
 
     def set_value_table(self):
         self.value_table = [[-30, -40, -40, -50, -50, -40, -40, -30],
@@ -391,6 +416,7 @@ class King(Piece):
                             [20, 20, 0, 0, 0, 0, 20, 20],
                             [20, 30, 10, 0, 0, 10, 30, 20]]
     
+
     def is_endgame(self):
         self.value_table = [[-50, -40, -30, -20, -20, -30, -40, -50],
                             [-30, -20, -10, 0, 0, -10, -20, -30],
@@ -400,6 +426,7 @@ class King(Piece):
                             [-30, -10, 20, 30, 30, 20, -10, -30],
                             [-30, -30, 0, 0, 0, 0, -30, -30],
                             [-50, -30, -30, -30, -30, -30, -30, -50]]
+
 
     def moves(self, position):
         """For the king, one need to checks the 8 surrounding squares, for being in check, and castling options."""
@@ -431,6 +458,7 @@ class King(Piece):
                 if board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
                     self.valid_moves.append((2, 0))
 
+
     # def castle_rights(position, x, y):
     #     player = position.get_player()
     #     board = position.get_board()
@@ -451,12 +479,15 @@ class King(Piece):
     #     position.set_board(board)
     #     return position
 
+
     # def is_pinned(self):
     #     if len(king.attacked_by['indirect']) >= 1:
     #         return True
 
+
     def in_check(self):
         return len(self.attacked_by['direct']) >= 1
+
 
     def is_checkmate(self):
         if self.in_check():
@@ -465,6 +496,7 @@ class King(Piece):
                     return False
             return True
         return False
+
 
     def is_stalemate(self):
         if not self.in_check():
