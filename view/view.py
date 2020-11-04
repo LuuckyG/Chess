@@ -2,17 +2,20 @@ import os
 import pygame
 
 from view.button import Button
+from model.pieces import Empty
+from model.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
 
 
 class GameView:
 
-    BACKGROUND_IMG = pygame.image.load(os.path.join('media', 'board.png'))
-    PIECES_IMG = pygame.image.load(os.path.join('media', 'pieces.png'))
+    BACKGROUND_IMG = pygame.image.load(os.path.join('view/media', 'board.png'))
+    PIECES_IMG = pygame.image.load(os.path.join('view/media', 'pieces.png'))
 
     WHITE = (255, 255, 255)
     YELLOW = (255, 233, 33)
     ORANGE = (255,237,194)
     RED = (255, 82, 82)
+    RED_HIGHLIGHT = (225, 0, 0, 50)
     BLUE = (69, 125, 255)
     BLACK = (0, 0, 0)
     LIGHT_GRAY = (225, 225, 225)
@@ -39,14 +42,21 @@ class GameView:
 
         # Setup screen
         self.screen_size = screen_size
-        self.screen = pygame.display.set_mode((self.screen_size + 100, self.screen_size))
+        self.screen = pygame.display.set_mode((self.screen_size + 320, self.screen_size))
 
         self.font = pygame.font.SysFont(None, 30)
         self.big_font = pygame.font.SysFont(None, 40)
         self.small_font = pygame.font.SysFont(None, 20)
 
+        # Get image of board
+        self.background = self.BACKGROUND_IMG.convert()
+        self.size_of_bg = self.background.get_rect().size
+
+        self.square_width = self.size_of_bg[0] // 8
+        self.square_height = self.size_of_bg[1] // 8
+
         # Display starting position
-        self.draw_start_position()
+        self.create_buttons()
 
 
     def draw_screens(self, status):
@@ -64,35 +74,52 @@ class GameView:
 
 
     def follow_mouse(self, x, y):
-        """Track mouse movement and if hovered over a button or board tile, change the color
-        of the button (or tile) to indicate focus."""
+        """Track mouse movement and if hovered over a button  tile, change the color
+        of the button to indicate focus."""
         pass
 
-    def draw_start_position(self):
+
+    def draw_start_position(self, board):
         """Draw board and start position of pieces"""
         
-        # Draw board (background)
-        self.background = self.BACKGROUND_IMG.convert()
-        self.size_of_bg = self.background.get_rect().size
-
-        self.square_width = self.size_of_bg[0] // 8
-        self.square_height = self.size_of_bg[1] // 8
-
+        # Draw board
         self.screen.blit(self.background, (0, 0))
 
-        # Pieces
+        # Get images of pieces
         self.pieces_image = self.PIECES_IMG.convert_alpha()
         self.pieces_image = pygame.transform.scale(self.pieces_image, (self.square_width * 6, self.square_height * 2))
         self.images = self.get_orig_images()
 
-    def draw_board(self):
+        self.draw_position(board)
+
+
+    def draw_highlighed_tiles(self, board):
+        for highlight in board.highlighted_tiles:
+            pygame.draw.rect(self.screen, self.RED_HIGHLIGHT,
+                        (highlight[0] * self.square_width, highlight[1] * self.square_height,
+                        self.square_width, self.square_height), 2)
+
+
+    def draw_position(self, board):
+        self.screen.blit(self.background, (0, 0))
+        self.draw_highlighed_tiles(board)
+
+        for rows in board.board:
+            for tile in rows:
+                if not isinstance(tile.state, Empty):
+                    piece = tile.state
+                    self.screen.blit(self.pieces_image, (piece.x * self.square_width, piece.y * self.square_height), piece.subsection)
+
+        self.draw_captured_pieces(board)
+
+
+    def draw_captured_pieces(self, board):
         pass
 
     
-    def draw_move(self, right_clicked=[], is_clicked=False, drag_coord=None):
+    def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):
         """Update chess board. Don't update moving piece, indicated by drag_coord"""
-        previous_move = self.position.get_previous_move()
-        self.screen.blit(self.all_images.background, (0, 0))
+        self.screen.blit(self.background, (0, 0))
 
         # Show square
         mouse_pos = pygame.mouse.get_pos()
@@ -101,7 +128,7 @@ class GameView:
                         (mouse_chess_coord[0] * self.square_width, mouse_chess_coord[1] * self.square_height,
                         self.square_width, self.square_height), 2)
 
-        if previous_move != [(-1, -1), (-1, -1)]:
+        if previous_move is not None:
             for chess_pos in previous_move:
                 pos = chess_coord_to_pixels(chess_pos, self.square_width, self.square_height)
                 self.screen.blit(self.images['yellow_box'], pos)
@@ -126,14 +153,28 @@ class GameView:
                 if piece.chess_coord != drag_coord:  
                     if piece.pos == (-1, -1):
                         # Default square
-                        self.screen.blit(self.all_images.pieces_image, pixel_coord, piece.subsection)
+                        self.screen.blit(self.pieces_image, pixel_coord, piece.subsection)
                     else:
                         # Specific pixels:
-                        self.screen.blit(self.all_images.pieces_image, pos, piece.subsection)
-    
+                        self.screen.blit(self.pieces_image, pos, piece.subsection)
+        
+        self.draw_position()
+        self.draw_captured_pieces(position)
 
-    def draw_captured_pieces(self, board):
-        pass
+
+    def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):
+        """Show message with info to the user at the bottom of the window, below the play board"""
+        # Create box at the bottom of the display
+        self.screen.fill(background, (0, self.screen_size, self.screen_size, 100))
+        
+        text = font.render(message, True, text_color, background)
+        text_box = text.get_rect()
+        text_box.center = (self.screen_size / 2, self.screen_size + 50)
+
+        # Show message
+        self.screen.blit(text, text_box)
+        pygame.display.update()
+
 
     def draw_start_screen(self):
         """Start screen"""
@@ -208,13 +249,13 @@ class GameView:
 
     def get_orig_images(self):
         """Load all the media into one dictionary"""
-        circle_image_green = pygame.image.load(os.path.join('media', 'green_circle_small.png')).convert_alpha()
-        circle_image_capture = pygame.image.load(os.path.join('media', 'green_circle_neg.png')).convert_alpha()
-        circle_image_red = pygame.image.load(os.path.join('media', 'red_circle_big.png')).convert_alpha()
-        green_box_image = pygame.image.load(os.path.join('media', 'green_box.png')).convert_alpha()
-        circle_image_yellow = pygame.image.load(os.path.join('media', 'yellow_circle_big.png')).convert_alpha()
-        circle_image_green_big = pygame.image.load(os.path.join('media', 'green_circle_big.png')).convert_alpha()
-        yellow_box_image = pygame.image.load(os.path.join('media', 'yellow_box.png')).convert_alpha()
+        circle_image_green = pygame.image.load(os.path.join('view/media', 'green_circle_small.png')).convert_alpha()
+        circle_image_capture = pygame.image.load(os.path.join('view/media', 'green_circle_neg.png')).convert_alpha()
+        circle_image_red = pygame.image.load(os.path.join('view/media', 'red_circle_big.png')).convert_alpha()
+        green_box_image = pygame.image.load(os.path.join('view/media', 'green_box.png')).convert_alpha()
+        circle_image_yellow = pygame.image.load(os.path.join('view/media', 'yellow_circle_big.png')).convert_alpha()
+        circle_image_green_big = pygame.image.load(os.path.join('view/media', 'green_circle_big.png')).convert_alpha()
+        yellow_box_image = pygame.image.load(os.path.join('view/media', 'yellow_box.png')).convert_alpha()
 
         images = {
             'circle_image_green': circle_image_green,
