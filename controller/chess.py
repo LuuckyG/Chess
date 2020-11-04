@@ -2,8 +2,7 @@ import os
 import pygame
 
 from view.view import GameView
-from model.position import GamePosition
-from setup.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
+from model.board import Board
 
 
 class Chess:
@@ -13,37 +12,148 @@ class Chess:
         """Setup of Chess game. All game state variables, positin, and the 
         view are created."""
 
+        # Game state variables
         self.play = True
         self.status = 'start_screen'
+        
+        # Mouse events
+        self.is_down = False
+        self.is_dragged = False
+        self.is_clicked = False
+        self.left_click = False
+        self.right_click = False
 
+        # Win conditions
         self.winner = None
         self.end_conditions = {'resignation': False,
                                'checkmate': False, 
                                'stalemate': False, 
                                'HMC': False, 
                                '3_fold_rep': False}
-        
         self.HMC = 0
-        self.castling = [[True, True], [True, True]]
+
+        # Move and player variables
         self.move_nr = 0
-        self.previous_move = [(-1, -1), (-1, -1)]
+        self.previous_move = None
         self.player_list = []
-        self.current_player_nr = 0
+        self.current_player = 0
+        self.current_color = 'wb'[self.current_player]
         
+        # Settings
         self.settings = {'vs_computer': False, 'ai_level': 1}
 
+        # View
         self.view = GameView()
-        self.position = GamePosition()
-        self.position.setup(self.view.square_width, self.view.square_height)
 
 
     def process_click(self, x, y):
+        """The main method of the controller.
+        This method determines in which phase of the game we are and 
+        what method needs to be executed based on the phase.
+
+        Args:
+        - x: x-coordinate of mouse at click (in px)
+        - y: y-coordinate of mouse at click (in px)
+        """
+
+        if self.status == 'start_screen':
+            self.start_screen(x, y)
+        elif self.status == 'settings':
+            self.update_settings(x, y)
+        elif self.status == 'game':
+            self.play_game(x, y)
+        elif self.status == 'replay':
+            self.new_game(x, y)
+            
+
+    def start_screen(self, x, y):
+        """Start screen of the game.
+        There are three options: start the game, look and 
+        change the game settings, or quit the game.
+        
+        Args:
+        - x: x-coordinate of mouse at click (in px)
+        - y: y-coordinate of mouse at click (in px)
+        """
+
+        if self.view.start_game_button.is_clicked(x, y):
+            self.status = 'game'
+            self.get_settings()
+            self.start_game()
+        elif self.view.settings_button.is_clicked(x, y):
+            self.status = 'settings'
+        elif self.view.quit_game_button.is_clicked(x, y):
+            self.status = 'end_game'
+            self.play = False
+
+
+    def get_settings(self):
+        """Get the selected settings by the user"""
+        
+        for button in self.view.all_buttons:
+            group = button.group
+            if (group == 'vs_computer' or group == 'ai_level') and button.selected:
+                self.settings[group] = button.value
+
+
+    def update_settings(self, x, y):
+        """Settings page.
+        Determine what settings the user changes. The values that can be changed are: 
+        the opponent (human or AI), and the level of the AI (1, 2 or 3).
+        
+        Args:
+        - x: x-coordinate of mouse at click (in px)
+        - y: y-coordinate of mouse at click (in px)
+        """
+
+        button_groups = ['vs_computer', 'ai_level']
+
+        # Check if button is clicked
+        for button in self.view.all_buttons:
+            if button.group in button_groups and button.is_clicked(x, y):
+                
+                # Update view of other buttons that are not selected
+                for related_button in self.view.all_buttons:
+                    if related_button.group == button.group and related_button.selected:
+                        self.view.update_button_look(related_button, False, 
+                                    self.view.LIGHT_GRAY, self.view.BLACK)
+
+                # Update view of clicked button
+                self.view.update_button_look(button, True, 
+                                    self.view.GREEN, self.view.WHITE)
+        
+        # Check if user is satisfied with settings and wants to return to
+        # start screen to start playing the game
+        if self.view.back_button.is_clicked(x, y):
+            self.status = 'start_screen'
+            
+
+    def start_game(self):
+        """The game is started with the selected settings.
+        The default settings are: human vs. human."""
+
+        # Create players
+        #TODO
+
+        # Change starting screen to Chess board
+        self.board = Board(square_width=self.view.square_width, 
+                           square_height=self.view.square_height)
+
+        self.view.draw_start_position(board=self.board)
+
+
+    def play_game(self, x, y):
+        pass
+
+
+    def ai_move(self):
         pass
 
 
     def check_move(self):
         """Check if move is valid"""
         pass
+
 
     def make_move(self, x, y, x2, y2):
         """Make valid move"""
@@ -132,3 +242,7 @@ class Chess:
         # position = is_checkmate(position, enemy_color)
         # position = is_stalemate(position, enemy_color)
         return False
+
+
+    def new_game(self, x, y):
+        pass
