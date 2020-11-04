@@ -33,7 +33,7 @@ class GameView:
 
         # Initialise pygame
         pygame.init()
-        pygame.time.Clock().tick(60)
+        self.clock = pygame.time.Clock()
         pygame.display.set_caption('Chess')
 
         self.border = border
@@ -93,16 +93,26 @@ class GameView:
         self.draw_position(board)
 
 
+    def draw_arrows(self, board):
+        ##### FOR NOW: DRAW 2 TILES AT BEGIN AND END POSITION ######
+        for arrow in board.arrow_coordinates:
+            (x1, y1), (x2, y2) = arrow
+            pygame.draw.rect(self.screen, self.GREEN, 
+                                (x1 * self.square_width, y1 * self.square_height, self.square_width, self.square_height), 0)
+            pygame.draw.rect(self.screen, self.GREEN, 
+                                (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
+
+
     def draw_highlighed_tiles(self, board):
-        for highlight in board.highlighted_tiles:
-            pygame.draw.rect(self.screen, self.RED_HIGHLIGHT,
-                        (highlight[0] * self.square_width, highlight[1] * self.square_height,
-                        self.square_width, self.square_height), 2)
+        for x, y in board.highlighted_tiles:
+            pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
+                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
 
 
     def draw_position(self, board):
         self.screen.blit(self.background, (0, 0))
         self.draw_highlighed_tiles(board)
+        self.draw_arrows(board)
 
         for rows in board.board:
             for tile in rows:
@@ -117,49 +127,49 @@ class GameView:
         pass
 
     
-    def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):
-        """Update chess board. Don't update moving piece, indicated by drag_coord"""
-        self.screen.blit(self.background, (0, 0))
+    # def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):
+    #     """Update chess board. Don't update moving piece, indicated by drag_coord"""
+    #     self.screen.blit(self.background, (0, 0))
 
-        # Show square
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_chess_coord = pixel_coord_to_chess(mouse_pos, self.square_width, self.square_height)
-        pygame.draw.rect(self.screen, (225, 0, 0, 50),
-                        (mouse_chess_coord[0] * self.square_width, mouse_chess_coord[1] * self.square_height,
-                        self.square_width, self.square_height), 2)
+    #     # Show square
+    #     mouse_pos = pygame.mouse.get_pos()
+    #     mouse_chess_coord = pixel_coord_to_chess(mouse_pos, self.square_width, self.square_height)
+    #     pygame.draw.rect(self.screen, (225, 0, 0, 50),
+    #                     (mouse_chess_coord[0] * self.square_width, mouse_chess_coord[1] * self.square_height,
+    #                     self.square_width, self.square_height), 2)
 
-        if previous_move is not None:
-            for chess_pos in previous_move:
-                pos = chess_coord_to_pixels(chess_pos, self.square_width, self.square_height)
-                self.screen.blit(self.images['yellow_box'], pos)
+    #     if previous_move is not None:
+    #         for chess_pos in previous_move:
+    #             pos = chess_coord_to_pixels(chess_pos, self.square_width, self.square_height)
+    #             self.screen.blit(self.images['yellow_box'], pos)
 
-        if right_clicked:
-            for pos in right_clicked:
-                pygame.draw.rect(self.screen, (225, 0, 0, 50),
-                                (pos[0] * self.square_width, pos[1] * self.square_height,
-                                self.square_width, self.square_height))
-        elif is_clicked:
-            pass
+    #     if right_clicked:
+    #         for pos in right_clicked:
+    #             pygame.draw.rect(self.screen, (225, 0, 0, 50),
+    #                             (pos[0] * self.square_width, pos[1] * self.square_height,
+    #                             self.square_width, self.square_height))
+    #     elif is_clicked:
+    #         pass
 
-        # Blit over other pieces
-        order = [self.position.pieces["white"], self.position.pieces["black"]] if self.position.get_player() == 1 \
-            else [self.position.pieces["black"], self.position.pieces["white"]]
+    #     # Blit over other pieces
+    #     order = [self.position.pieces["white"], self.position.pieces["black"]] if self.position.get_player() == 1 \
+    #         else [self.position.pieces["black"], self.position.pieces["white"]]
 
-        for piece_color in order:
-            for piece in piece_color:
-                pixel_coord = chess_coord_to_pixels(piece.chess_coord, self.square_width, self.square_height)
+    #     for piece_color in order:
+    #         for piece in piece_color:
+    #             pixel_coord = chess_coord_to_pixels(piece.chess_coord, self.square_width, self.square_height)
                 
-                # Don't blit moving piece
-                if piece.chess_coord != drag_coord:  
-                    if piece.pos == (-1, -1):
-                        # Default square
-                        self.screen.blit(self.pieces_image, pixel_coord, piece.subsection)
-                    else:
-                        # Specific pixels:
-                        self.screen.blit(self.pieces_image, pos, piece.subsection)
+    #             # Don't blit moving piece
+    #             if piece.chess_coord != drag_coord:  
+    #                 if piece.pos == (-1, -1):
+    #                     # Default square
+    #                     self.screen.blit(self.pieces_image, pixel_coord, piece.subsection)
+    #                 else:
+    #                     # Specific pixels:
+    #                     self.screen.blit(self.pieces_image, pos, piece.subsection)
         
-        self.draw_position()
-        self.draw_captured_pieces(position)
+    #     self.draw_position()
+    #     self.draw_captured_pieces(position)
 
 
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):

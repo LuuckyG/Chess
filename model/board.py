@@ -24,6 +24,7 @@ class Board:
         
         self.captured_pieces = []
         self.highlighted_tiles = []
+        self.arrow_coordinates = []
 
         self.setup()
     

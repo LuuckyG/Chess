@@ -14,7 +14,7 @@ class Chess:
 
         # Game state variables
         self.play = True
-        self.status = 'start_screen'
+        self.status = 'game'
         
         # Mouse events
         self.is_down = False
@@ -23,6 +23,12 @@ class Chess:
         self.left_click = False
         self.right_click = False
 
+        # Dragging pieces coordinates
+        self.left_click_coordinates = None
+
+        # Drawing arrows coordinates
+        self.right_click_coordinates = None
+        
         # Win conditions
         self.winner = None
         self.end_conditions = {'resignation': False,
@@ -46,7 +52,7 @@ class Chess:
         self.view = GameView()
 
 
-    def process_click(self, x, y):
+    def process_click(self, x, y, is_up=False):
         """The main method of the controller.
         This method determines in which phase of the game we are and 
         what method needs to be executed based on the phase.
@@ -64,7 +70,53 @@ class Chess:
             self.play_game(x, y)
         elif self.status == 'replay':
             self.new_game(x, y)
-            
+    
+    
+    def reset_highlights_and_arrows(self):
+        self.board.highlighted_tiles = []
+        self.board.arrow_coordinates = []
+
+
+    def remove_arrow(self, arrow):
+        reverse_arrow = [arrow[1], arrow[0]]
+        return reverse_arrow in self.board.arrow_coordinates
+
+
+    def process_right_click(self, mouse_x, mouse_y, is_up):
+        """"""
+        
+        x, y = self.pixel_coord_to_chess(mouse_x, mouse_y)
+
+        if is_up:
+
+            # Check for possible arrows
+            if (x, y) != self.right_click_coordinates:
+                x1, y1 = self.right_click_coordinates
+                arrow = [(x1, y1), (x, y)]
+
+                # Check if user wants to remove arrow by drawing opposite arrow
+                if self.remove_arrow(arrow):
+                    reverse_arrow = [arrow[1], arrow[0]]
+                    index = self.board.arrow_coordinates.index(reverse_arrow)
+                    self.board.arrow_coordinates.pop(index)
+
+                elif arrow not in self.board.arrow_coordinates:
+                    self.board.arrow_coordinates.append(arrow)                   
+
+            else:
+                # User does not want to draw arrow but wants to highlight tiles
+                if (x, y) not in self.board.highlighted_tiles:
+                    self.board.highlighted_tiles.append((x, y))
+                else:
+                    index = self.board.highlighted_tiles.index((x, y))
+                    self.board.highlighted_tiles.pop(index)
+
+        else:    
+            # Register location of mouse down event
+            self.right_click_coordinates = (x, y)          
+
+        self.view.draw_position(self.board)
+
 
     def start_screen(self, x, y):
         """Start screen of the game.
@@ -143,7 +195,7 @@ class Chess:
 
 
     def play_game(self, x, y):
-        pass
+        self.view.draw_position(self.board)
 
 
     def ai_move(self):
@@ -246,3 +298,13 @@ class Chess:
 
     def new_game(self, x, y):
         pass
+
+
+    def chess_coord_to_pixels(self, chess_x, chess_y):
+        """Get pixel coordinates from chess board coordinates"""
+        return chess_x * self.view.square_width, chess_y * self.view.square_height
+
+
+    def pixel_coord_to_chess(self, pixel_x, pixel_y):
+        """Get board coordinates from pixel board coordinates"""
+        return pixel_x // self.view.square_width, pixel_y // self.view.square_height
