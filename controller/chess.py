@@ -3,6 +3,7 @@ import pygame
 
 from view.view import GameView
 from model.board import Board
+from model.pieces import Empty
 
 
 class Chess:
@@ -194,7 +195,14 @@ class Chess:
         self.view.draw_start_position(board=self.board)
 
 
-    def play_game(self, x, y):
+    def play_game(self, mouse_x, mouse_y):
+        x, y = self.pixel_coord_to_chess(mouse_x, mouse_y)
+        tile = self.board.get_tile_at_pos(x, y)
+        
+        if tile is not None:
+            if isinstance(tile.state, Empty):
+                self.reset_highlights_and_arrows()
+
         self.view.draw_position(self.board)
 
 

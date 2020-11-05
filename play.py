@@ -35,22 +35,29 @@ def play():
 
             #     else:
                     
-            # Left click
-            # if pygame.mouse.get_pressed()[0]:
-            #     x, y = event.pos
-            #     if event.type == MOUSEBUTTONDOWN:
-            #         chess.process_click(x, y, is_up=False)
-            #     elif event.type == MOUSEBUTTONUP:
-            #         chess.process_click(x, y, is_up=True)
-
-            # Right click
-            if event.type == MOUSEBUTTONDOWN and event.button == 3:
+            
+            if event.type == MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
-                chess.process_right_click(x, y, is_up=False)
+                
+                # Left click
+                if event.button == 1:
+                    chess.process_click(x, y, is_up=False)
 
-            if event.type == MOUSEBUTTONUP and event.button == 3:
+                # Right click
+                if event.button == 3:
+                    x, y = pygame.mouse.get_pos()
+                    chess.process_right_click(x, y, is_up=False)
+
+            if event.type == MOUSEBUTTONUP:
                 x, y = pygame.mouse.get_pos()
-                chess.process_right_click(x, y, is_up=True)
+
+                # Left click
+                if event.button == 1:
+                    chess.process_click(x, y, is_up=False)
+
+                # Right click
+                if event.button == 3:                   
+                    chess.process_right_click(x, y, is_up=True)
 
             #         left_click, _, right_click = pygame.mouse.get_pressed()
 

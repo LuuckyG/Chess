@@ -54,11 +54,11 @@ class Board:
                     elif symbol == 'P':
                         piece = Pawn(symbol, color, x, (7 - y), self.square_width, self.square_height)
                     
-                    tile = Tile(x, y, self.square_width, piece)
+                    tile = Tile(x, y, 1, piece)
                     
                 else:
-                    state = Empty(x, y)
-                    tile = Tile(x, y, self.square_width, state)
+                    state = Empty(x, (7 - y))
+                    tile = Tile(x, y, 1, state)
             
                 board_row.append(tile)
             self.board.append(board_row)
@@ -77,10 +77,8 @@ class Board:
         return None
 
 
-    def get_piece(self, x, y):
-        """Get piece selected by mouse click"""
-        tile = self.get_tile_at_pos(x, y)
+    def get_piece(self, tile):
+        """Get piece at selected tile"""
         if tile is not None:
             if not isinstance(tile.state, Empty):
                 return tile.state
-        return None
