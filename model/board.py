@@ -22,46 +22,53 @@ class Board:
         self.square_width = square_width
         self.square_height = square_height
         
+        self.id = 0
+        self.position = []
         self.captured_pieces = []
         self.highlighted_tiles = []
         self.arrow_coordinates = []
+        self.pieces = {'w': [], 'b': []}
 
         self.setup()
     
 
     def setup(self):
         """Create piece objects based on starting board position"""
-        self.board = []
-
+        
         for y in range(8):
             board_row = []
+            
             for x in range(8):
                 if self.START_POSITION[y][x] != 0:
-
+                    self.id += 1
                     symbol = self.START_POSITION[y][x][0]
                     color = self.START_POSITION[y][x][1]
-
+                    
                     if symbol == 'K':
-                        piece = King(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = King(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'Q':
-                        piece = Queen(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = Queen(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'B':
-                        piece = Bishop(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = Bishop(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'N':
-                        piece = Knight(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = Knight(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'R':
-                        piece = Rook(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = Rook(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'P':
-                        piece = Pawn(symbol, color, x, (7 - y), self.square_width, self.square_height)
+                        piece = Pawn(self.id, symbol, color, x, y, self.square_width, self.square_height)
+                    else:
+                        raise ValueError('Undefined piece type.')
                     
                     tile = Tile(x, y, 1, piece)
+                    self.pieces[color].append(piece)
                     
                 else:
-                    state = Empty(x, (7 - y))
+                    state = Empty(x, y)
                     tile = Tile(x, y, 1, state)
             
                 board_row.append(tile)
-            self.board.append(board_row)
+            self.position.append(board_row)
+            
     
     def get_tile_at_pos(self, x, y):
         """"Get the tile at the mouse click location.
@@ -70,7 +77,7 @@ class Board:
         - x: x-coordinate of mouse at click
         - y: y-coordinate of mouse at click
         """
-        for rows in self.board:
+        for rows in self.position:
             for tile in rows:
                 if tile.rect.collidepoint(x, y):
                     return tile

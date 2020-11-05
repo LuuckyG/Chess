@@ -1,13 +1,13 @@
-from model.utils import opposite
-
-
 class Empty:
     """Class for empty squares"""
 
+    LETTERS = 'abcdefgh'
+    
     def __init__(self, x, y):       
         self.x = x
         self.y = y
         self.attacked_by = {'direct': [], 'indirect': []}
+        self.coordinate = self.LETTERS[self.x] + str(self.y + 1)
         
 
 class Piece:
@@ -15,16 +15,19 @@ class Piece:
 
     LETTERS = 'abcdefgh'
 
-    def __init__(self, symbol, color, x, y, square_width, square_height):
-
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        
+        self.id = id
         self.symbol = symbol
         self.color = color
-        self.enemy_color = opposite(self.color)
+        self.enemy_color = 'b' if self.color == 'w' else 'w'
+        self.player = 0 if self.color == 'w' else 1
         
         self.x = x
         self.y = y
         self.upper_y = 0 if self.color == 'w' else square_height
 
+        self.is_blocked = False
         self.is_pinned = False
         self.has_moved = False
 
@@ -36,7 +39,7 @@ class Piece:
 
 
     def set_coordinate(self):
-        self.coordinate = self.LETTERS[self.x] + str(8 - self.y)
+        self.coordinate = self.LETTERS[self.x] + str(self.y + 1)
 
 
     def set_subsection(self, index, square_width, square_height):
@@ -54,64 +57,89 @@ class Piece:
     #     return False
     
 
-    def check_square(self, position, x, y, direct_attack):
+    def check_square(self, board, x, y, direct_attack):
+        """[summary]
+
+        Args:
+            board ([type]): [description]
+            x ([type]): [description]
+            y ([type]): [description]
+            direct_attack ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
 
         attack_type = 'direct' if direct_attack else 'indirect'
-
-        # Check if square is empty
-        if not position.is_occupied(x, y):
-            self.valid_moves.append((x, y))
-            empty_square = position.get_piece((x, y), empty=True)
-            empty_square.attacked_by[attack_type].append(self)
-        else:
-            # Check for possible capture
-            if position.is_occupied_by_enemy(x, y, self.enemy_color):
-                attacked_piece = position.get_piece((x, y))
-                attacked_piece.attacked_by[attack_type].append(self)
-                
-                self.valid_moves.append((x, y))
-                self.attacks[attack_type].append(attacked_piece)
+        tile = board.get_tile_at_pos(x, y)
+        
+        if tile is not None:
+            if not isinstance(tile.state, Empty):
+                if tile.state.color != self.color and not self.is_blocked:
+                    tile.state.attacked_by[attack_type].append(self)
+                    self.attacks[attack_type].append(tile.state)
+                    
+                    if direct_attack:
+                        self.valid_moves.append((tile.x, tile.y))
+                        
+                else:
+                    self.is_blocked = True
+                    
                 return False
-        return True
+            else:
+                tile.state.attacked_by[attack_type].append(self)
+                
+                if direct_attack:
+                    self.valid_moves.append((tile.x, tile.y))
+        
+        return direct_attack
     
 
-    def horizontal_moves(self, position, max_range):
+    def horizontal_moves(self, board, max_range):
         """Check all horizontal squares the piece can move to, and
         possibly capture another piece."""
 
         for dx in self.direction:
             x_possible = self.x
             direct_attack = True
+            self.is_blocked = False
 
             for _ in range(max_range): 
                 
                 x_possible += dx
 
                 if 0 <= x_possible <= 7:
-                    direct_attack = self.check_square(position, x_possible, self.y, direct_attack)
+                    direct_attack = self.check_square(board, x_possible, self.y, direct_attack)
                 else:
+                    break
+                
+                if self.is_blocked:
                     break
 
 
-    def vertical_moves(self, position, max_range):
+    def vertical_moves(self, board, max_range):
         """Check all vertical squares the piece can move to, and
         possibly capture another piece."""
         
         for dy in self.direction:
             y_possible = self.y
             direct_attack = True
+            self.is_blocked = False
 
             for _ in range(max_range):
                 
                 y_possible += dy
 
                 if 0 <= y_possible <= 7:
-                    direct_attack = self.check_square(position, self.x, y_possible, direct_attack)
+                    direct_attack = self.check_square(board, self.x, y_possible, direct_attack)
                 else:
+                    break
+                
+                if self.is_blocked:
                     break
 
 
-    def diagonal_moves(self, position, max_range):
+    def diagonal_moves(self, board, max_range):
         """Check all diagonal squares the piece can move to, and
         possibly capture another piece."""
 
@@ -119,6 +147,7 @@ class Piece:
             x_possible = self.x
             y_possible = self.y
             direct_attack = True
+            self.is_blocked = False
 
             for _ in range(max_range):
                 x_possible += d
@@ -126,14 +155,18 @@ class Piece:
 
                 # Check first diagonal
                 if 0 <= x_possible <= 7 and 0 <= y_possible <= 7:
-                    direct_attack = self.check_square(position, x_possible, y_possible, direct_attack)
+                    direct_attack = self.check_square(board, x_possible, y_possible, direct_attack)
                 else:
+                    break
+                    
+                if self.is_blocked:
                     break
 
             # Reset search square
             x_possible = self.x
             y_opposite = self.y
             direct_attack = True
+            self.is_blocked = False
 
             # Check second diagonal
             for _ in range(max_range):
@@ -141,20 +174,24 @@ class Piece:
                 y_opposite -= d
 
                 if 0 <= x_possible <= 7 and 0 <= y_opposite <= 7:
-                    direct_attack = self.check_square(position, x_possible, y_opposite, direct_attack)
+                    direct_attack = self.check_square(board, x_possible, y_opposite, direct_attack)
                 else:
+                    break
+            
+                if self.is_blocked:
                     break
 
 
 class Pawn(Piece):
     """Class for pawns"""
 
-    def __init__(self, symbol, color, x, y, square_width, square_height):
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
         
-        super().__init__(symbol, color, x, y, square_width, square_height)
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         
         # En Passant Target
-        self.EPT = -1  
+        self.EPT = -1
+        self.walk_direction = 1 if self.color == 'w' else -1
         
         self.index = 5
         self.points = 1
@@ -174,84 +211,62 @@ class Pawn(Piece):
                             [0, 0, 0, 0, 0, 0, 0, 0]]
     
 
-    def moves(self, position):
-        board = position.board
-        previous_move = position.get_previous_move()
-        
+    def moves(self, board, previous_move):
+        self.is_blocked = False
         self.valid_moves = []
-
-        # Pawn Movement       
-        if self.color == 'w':
-            self.direction = [-1]
-            max_range = 2 if self.y == 6 else 1
-        else:
-            self.direction = [1]
-            max_range = 2 if self.y == 1 else 1
+        self.direction = [self.walk_direction]
+        max_range = 2 if not self.has_moved else 1
         
-        self.vertical_moves(position=position, max_range=max_range)
-
-
-        #### Pawn Captures ####
-        # White pawns
-        if self.x != 0 and position.is_occupied_by_enemy(self.x - 1, self.y - 1, self.enemy_color):
-            self.valid_moves.append((self.x - 1, self.y - 1))
-        if self.x != 7 and position.is_occupied_by_enemy(self.x + 1, self.y - 1, self.enemy_color):
-            self.valid_moves.append((self.x + 1, self.y - 1))
-
-        # Black pawns
-        if self.x != 0 and position.is_occupied_by_enemy(self.x - 1, self.y + 1, self.enemy_color):
-            self.valid_moves.append((self.x - 1, self.y + 1))
-        if self.x != 7 and position.is_occupied_by_enemy(self.x + 1, self.y + 1, self.enemy_color):
-            self.valid_moves.append((self.x + 1, self.y + 1))
-
-
-        #### EN PASSANT ####
-        # Check for en passant possibilities (white)
-        if self.y == 3:
-            if previous_move == [(self.x - 1, 1), (self.x - 1, self.y)]:
-                if board[self.y][self.x - 1][0] == 'P':
-                    self.valid_moves.append((self.x - 1, self.y - 1))
-                    position.set_EPT((self.x - 1, self.y - 1))
-            elif previous_move == [(self.x + 1, 1), (self.x + 1, self.y)]:
-                if board[self.y][self.x + 1][0] == 'P':
-                    self.valid_moves.append((self.x + 1, self.y - 1))
-                    position.set_EPT((self.x + 1, self.y - 1))
-
-        # Check for en passant possibilities (black)
-        if self.y == 4:
-            if previous_move == [(self.x - 1, 6), (self.x - 1, self.y)]:
-                if board[self.y][self.x - 1][0] == 'P':
-                    self.valid_moves.append((self.x - 1, self.y + 1))
-                    position.set_EPT((self.x - 1, self.y + 1))
-            elif previous_move == [(self.x + 1, 6), (self.x + 1, self.y)]:
-                if board[self.y][self.x + 1][0] == 'P':
-                    self.valid_moves.append((self.x + 1, self.y + 1))
-                    position.set_EPT((self.x + 1, self.y + 1))
-
-        #### PROMOTION ####
-        # TO DO!
-        # def is_promotion(position, y):
-        #     return y == position.get_player() * 7
-
-        # def en_passant_rights(position, x, y):
-        #     """If en passant captured, update board by removing captured pawn."""
-        #     player = position.get_player()
-        #     board = position.get_board()
-        #     en_passant_target = position.get_EPT()
-
-        #     if (x, y) == en_passant_target and 'wb'[player] == 'w':
-        #         board[y + 1][x] = 0
-        #     elif (x, y) == en_passant_target and 'wb'[player] == 'b':
-        #         board[y - 1][x] = 0
-        #     position.set_board(board)
-        #     return position
+        self.vertical_moves(board=board, max_range=max_range)
+        self.captures(board=board)
+        self.en_passant(board=board, previous_move=previous_move)
+        self.promotion()
+        return self.valid_moves
+    
+    
+    def captures(self, board):
+        if self.x != 0:
+            tile = board.get_tile_at_pos(self.x - 1, self.y + self.walk_direction)
+            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
+                self.valid_moves.append((self.x - 1, self.y + self.walk_direction)) 
+                     
+        if self.x != 7:
+            tile = board.get_tile_at_pos(self.x + 1, self.y + self.walk_direction)  
+            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
+                self.valid_moves.append((self.x + 1, self.y + self.walk_direction)) 
+    
+    
+    def en_passant(self, board, previous_move):
+        v = 0 if self.color == 'w' else 1
+        w = 2 * self.walk_direction
+        
+        ept_y = 4 - v
+                
+        if self.y == ept_y:
+            if self.x != 0:
+                tile = board.get_tile_at_pos(self.x - 1, self.y)
+                if previous_move == [(self.x - 1, self.y + w), (self.x - 1, self.y)] \
+                    and isinstance(tile.state, Pawn):
+                        self.valid_moves.append((self.x - 1, self.y + self.walk_direction))
+                        self.EPT = (self.x - 1, self.y + self.walk_direction)
+            
+            if self.x != 7:
+                tile = board.get_tile_at_pos(self.x + 1, self.y)
+                if previous_move == [(self.x + 1, self.y + w), (self.x + 1, self.y)] \
+                    and isinstance(tile.state, Pawn):
+                        self.valid_moves.append((self.x + 1, self.y + self.walk_direction))
+                        self.EPT = (self.x + 1, self.y + self.walk_direction)
+                       
+    
+    def promotion(self):
+        pass
 
     
 class Knight(Piece):
     """Class for knights"""
     
-    def __init__(self, name, color, x, y, square_width, square_height):
-        super().__init__(name, color, x, y, square_width, square_height)
+    def __init__(self, id, name, color, x, y, square_width, square_height):
+        super().__init__(id, name, color, x, y, square_width, square_height)
         self.index = 3
         self.points = 3
         self.set_value_table()
@@ -270,7 +285,7 @@ class Knight(Piece):
                             [-50, -90, -30, -30, -30, -30, -90, -50]]
 
 
-    def moves(self, position):
+    def moves(self, board, previous_move):
         """A knight can either move +2/-2 in x direction and +1/-1 in y direction, or the other way around"""
 
         self.valid_moves = []
@@ -284,10 +299,11 @@ class Knight(Piece):
                 for dy in self.direction:
                     y_possible = self.y + 2 * dy
                     if 0 <= y_possible <= 7:
-                        if not position.is_occupied(x_possible, y_possible):
+                        tile = board.get_tile_at_pos(x_possible, y_possible)
+                        if isinstance(tile.state, Empty):
                             self.valid_moves.append((x_possible, y_possible))
-                        else:
-                            if position.is_occupied_by_enemy(x_possible, y_possible, self.enemy_color):
+                        else: 
+                            if tile.state.color == self.enemy_color:
                                 self.valid_moves.append((x_possible, y_possible))
 
         for dy in self.direction:
@@ -299,18 +315,21 @@ class Knight(Piece):
                 for dx in self.direction:
                     x_possible = self.x + 2 * dx
                     if 0 <= x_possible <= 7:
-                        if not position.is_occupied(x_possible, y_possible):
+                        tile = board.get_tile_at_pos(x_possible, y_possible)
+                        if isinstance(tile.state, Empty):
                             self.valid_moves.append((x_possible, y_possible))
-                        else:
-                            if position.is_occupied_by_enemy(x_possible, y_possible, self.enemy_color):
+                        else: 
+                            if tile.state.color == self.enemy_color:
                                 self.valid_moves.append((x_possible, y_possible))
+        
+        return self.valid_moves
 
 
 class Bishop(Piece):
-    """Class for pawn bishops"""
+    """Class for bishops"""
 
-    def __init__(self, name, color, x, y, square_width, square_height):
-        super().__init__(name, color, x, y, square_width, square_height)
+    def __init__(self, id, name, color, x, y, square_width, square_height):
+        super().__init__(id, name, color, x, y, square_width, square_height)
         self.index = 2
         self.points = 3
         self.set_value_table()
@@ -329,16 +348,17 @@ class Bishop(Piece):
                             [-20, -10, -90, -10, -10, -90, -10, -20]]
     
 
-    def moves(self, position):
+    def moves(self, board, previous_move):
         self.valid_moves = []
-        self.diagonal_moves(position=position, max_range=7)
+        self.diagonal_moves(board=board, max_range=7)
+        return self.valid_moves
 
 
 class Rook(Piece):
     """Class for rooks"""
     
-    def __init__(self, name, color, x, y, square_width, square_height):
-        super().__init__(name, color, x, y, square_width, square_height)
+    def __init__(self, id, name, color, x, y, square_width, square_height):
+        super().__init__(id, name, color, x, y, square_width, square_height)
         self.index = 4
         self.points = 5
         self.set_value_table()
@@ -357,17 +377,18 @@ class Rook(Piece):
                             [0, 0, 0, 5, 5, 0, 0, 0]]
 
 
-    def moves(self, position):
+    def moves(self, board, previous_move):
         self.valid_moves = []
-        self.horizontal_moves(position=position, max_range=7)
-        self.vertical_moves(position=position, max_range=7)
+        self.horizontal_moves(board=board, max_range=7)
+        self.vertical_moves(board=board, max_range=7)
+        return self.valid_moves
 
 
 class Queen(Piece):
     """Class for the queen"""
     
-    def __init__(self, name, color, x, y, square_width, square_height):
-        super().__init__(name, color, x, y, square_width, square_height)
+    def __init__(self, id, name, color, x, y, square_width, square_height):
+        super().__init__(id, name, color, x, y, square_width, square_height)
         self.index = 1
         self.points = 9
         self.set_value_table()
@@ -386,18 +407,19 @@ class Queen(Piece):
                             [-20, -10, -10, 70, -5, -10, -10, -20]]
 
 
-    def moves(self, position):
+    def moves(self, board, previous_move):
         self.valid_moves = []
-        self.horizontal_moves(position=position, max_range=7)
-        self.vertical_moves(position=position, max_range=7)
-        self.diagonal_moves(position=position, max_range=7)
+        self.horizontal_moves(board=board, max_range=7)
+        self.vertical_moves(board=board, max_range=7)
+        self.diagonal_moves(board=board, max_range=7)
+        return self.valid_moves
         
 
 class King(Piece):
     """Class for the king"""
     
-    def __init__(self, name, color, x, y, square_width, square_height):
-        super().__init__(name, color, x, y, square_width, square_height)
+    def __init__(self, id, name, color, x, y, square_width, square_height):
+        super().__init__(id, name, color, x, y, square_width, square_height)
         self.index = 0
         self.points = 9999
         self.castling = [True, True]
@@ -428,56 +450,33 @@ class King(Piece):
                             [-50, -30, -30, -30, -30, -30, -30, -50]]
 
 
-    def moves(self, position):
-        """For the king, one need to checks the 8 surrounding squares, for being in check, and castling options."""
-        board = position.get_board()
+    def moves(self, board, previous_move):
+        """For the king, one need to checks the 8 surrounding squares, 
+        for being in check, and castling options."""
+        
         self.valid_moves = []
-        self.horizontal_moves(position=position, max_range=1)
-        self.vertical_moves(position=position, max_range=1)
-        self.diagonal_moves(position=position, max_range=1)
-
-        # Castling options
-        castle_right = position.get_castle_rights()
-
-        if self.color == 'w':
-            # Kingside castle
-            if castle_right[0][0]:
-                if board[7][5] == 0 and board[7][6] == 0:
-                    self.valid_moves.append((6, 7))
-            # Queenside castle
-            if castle_right[0][1]:
-                if board[7][1] == 0 and board[7][2] == 0 and board[7][3] == 0:
-                    self.valid_moves.append((2, 7))
-        elif self.color == 'b':
-            # Kingside castle
-            if castle_right[1][0]:
-                if board[0][5] == 0 and board[0][6] == 0:
-                    self.valid_moves.append((6, 0))
-            # Queenside castle
-            if castle_right[1][1]:
-                if board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
-                    self.valid_moves.append((2, 0))
+        self.horizontal_moves(board=board, max_range=1)
+        self.vertical_moves(board=board, max_range=1)
+        self.diagonal_moves(board=board, max_range=1)
+        self.castling_rights(board=board)
+        return self.valid_moves
 
 
-    # def castle_rights(position, x, y):
-    #     player = position.get_player()
-    #     board = position.get_board()
-    #     castle_right = position.get_castle_rights()
-
-    #     if (x, y) == (2, (1 - player) * 7):
-    #         # Queenside
-    #         board[(1 - player) * 7][3] = board[(1 - player) * 7][0]
-    #         board[(1 - player) * 7][0] = 0
-    #         castle_right[player][0] = castle_right[player][1] = False
-    #     elif (x, y) == (6, (1 - player) * 7):
-    #         # Kingside
-    #         board[(1 - player) * 7][5] = board[(1 - player) * 7][7]
-    #         board[(1 - player) * 7][7] = 0
-    #         castle_right[player][0] = castle_right[player][1] = False
-
-    #     position.set_castle_rights(castle_right)
-    #     position.set_board(board)
-    #     return position
+    def castling_rights(self, board):
+        position = board.position
+        
+        # Kingside castle
+        if self.castling[0] and not self.has_moved:
+            if (isinstance(position[7 * self.player][5], Empty) and 
+                isinstance(position[7 * self.player][6], Empty)):
+                self.valid_moves.append((6, 7 * self.player))
+                
+        # Queenside castle
+        if self.castling[1] and not self.has_moved:
+            if (isinstance(position[7 * self.player][1], Empty) and 
+                isinstance(position[7 * self.player][2], Empty) and 
+                isinstance(position[7 * self.player][3], Empty)):
+                self.valid_moves.append((2, 7 * self.player))
 
 
     # def is_pinned(self):

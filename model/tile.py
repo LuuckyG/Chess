@@ -12,6 +12,7 @@ class Tile:
         - size: size of the tile (in px)
         - state: the state of the tile. This is either 'empty' (default), or a Piece
         """
+        self.id = id
         self.x = x
         self.y = y
         self.size = size

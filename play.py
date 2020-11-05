@@ -34,7 +34,9 @@ def play():
             #         chess.ai_move()
 
             #     else:
-                    
+            
+            # if event.type == MOUSEMOTION and chess.is_dragged is not None:
+            #     chess.view.draw_dragged_piece()
             
             if event.type == MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
@@ -53,7 +55,7 @@ def play():
 
                 # Left click
                 if event.button == 1:
-                    chess.process_click(x, y, is_up=False)
+                    chess.process_click(x, y, is_up=True)
 
                 # Right click
                 if event.button == 3:                   
@@ -79,7 +81,9 @@ def play():
             #         if event.type == MOUSEBUTTONUP:
             #             x, y = event.pos
             #             chess.process_click(x, y)
-           
-            view.clock.tick(60)
+            
+            # if chess.is_clicked is not None:
+            #     print(chess.is_clicked.moves(chess.board))
+
 
 if __name__ == "__main__": play()

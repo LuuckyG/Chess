@@ -33,9 +33,10 @@ class GameView:
 
         # Initialise pygame
         pygame.init()
-        self.clock = pygame.time.Clock()
         pygame.display.set_caption('Chess')
-
+        self.clock = pygame.time.Clock()
+        self.clock.tick(60)
+        
         self.border = border
         self.line_width = line_width
         self.all_buttons = []
@@ -81,11 +82,6 @@ class GameView:
 
     def draw_start_position(self, board):
         """Draw board and start position of pieces"""
-        
-        # Draw board
-        self.screen.blit(self.background, (0, 0))
-
-        # Get images of pieces
         self.pieces_image = self.PIECES_IMG.convert_alpha()
         self.pieces_image = pygame.transform.scale(self.pieces_image, (self.square_width * 6, self.square_height * 2))
         self.images = self.get_orig_images()
@@ -93,6 +89,21 @@ class GameView:
         self.draw_position(board)
 
 
+    def draw_position(self, board, moves=[], dragged_piece=None):
+        self.screen.blit(self.background, (0, 0))
+        self.draw_highlighed_tiles(board)
+        self.draw_arrows(board)
+        self.draw_possible_moves(moves)
+        self.draw_all_pieces(board)
+        self.draw_captured_pieces(board)
+        
+        
+    def draw_highlighed_tiles(self, board):
+        for x, y in board.highlighted_tiles:
+            pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
+                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)    
+    
+    
     def draw_arrows(self, board):
         ##### FOR NOW: DRAW 2 TILES AT BEGIN AND END POSITION ######
         for arrow in board.arrow_coordinates:
@@ -103,24 +114,19 @@ class GameView:
                                 (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
 
 
-    def draw_highlighed_tiles(self, board):
-        for x, y in board.highlighted_tiles:
-            pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
-                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
-
-
-    def draw_position(self, board):
-        self.screen.blit(self.background, (0, 0))
-        self.draw_highlighed_tiles(board)
-        self.draw_arrows(board)
-
-        for rows in board.board:
+    def draw_possible_moves(self, moves):
+        for (x, y) in moves:
+            self.screen.blit(self.images['circle_image_capture'], (x * self.square_width, (7 - y) * self.square_height))
+    
+    
+    def draw_all_pieces(self, board):
+        player = 0 # Show white under (make this flexible)
+        for rows in board.position:
             for tile in rows:
                 if not isinstance(tile.state, Empty):
-                    piece = tile.state
-                    self.screen.blit(self.pieces_image, (piece.x * self.square_width, piece.y * self.square_height), piece.subsection)
-
-        self.draw_captured_pieces(board)
+                    piece = board.get_piece(tile)
+                    y = (7 - piece.y) if player == 0 else piece.y
+                    self.screen.blit(self.pieces_image, (piece.x * self.square_width, y * self.square_height), piece.subsection)
 
 
     def draw_captured_pieces(self, board):
@@ -183,7 +189,6 @@ class GameView:
 
         # Show message
         self.screen.blit(text, text_box)
-        pygame.display.update()
 
 
     def draw_start_screen(self):
