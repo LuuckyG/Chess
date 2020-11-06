@@ -1,89 +1,92 @@
 import pygame
-from pygame.locals import QUIT, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, K_q, K_c
+from pygame.locals import *
 
 from controller.chess import Chess
 
 
-def play():
-    """The main game loop"""
-    chess = Chess()
-    view = chess.view
-    chess.start_game()
+class Game:
+    """game Main entry point. handles intialization of game and graphics, 
+    as well as game loop"""    
 
-    while getattr(chess, 'play'):
-        pygame.display.update()
-        status = getattr(chess, 'status')
+    def __init__(self):
+        """Initialize PyGame window."""
+        
+        self.chess = Chess()
+        self.view = self.chess.view
+        
+        self.chess.start_game()
+        self.board = self.chess.board
+        
 
-        for event in pygame.event.get():
-            if event.type == QUIT or pygame.key.get_pressed()[K_q]:
-                chess.play = False
-                pygame.quit()
-                break
+    def play(self):
+        """Game() main loop.
 
-            # if status != 'game':
-            #     if event.type == MOUSEMOTION:
-            #         x, y = event.pos
-            #         view.follow_mouse(x, y, status)
-            #     
-            #     view.draw_screens(status)
-
-            # else:
-            #     player = chess.current_player
-
-            #     if getattr(player, 'player_type') == 'AI':
-            #         chess.ai_move()
-
-            #     else:
+            1. player input
+            2. move stuff
+            3. draw stuff
+        """
+        while self.chess.play:
             
-            # if event.type == MOUSEMOTION and chess.is_dragged is not None:
-            #     chess.view.draw_dragged_piece()
+            # get input            
+            self.handle_events()
+
+            # move stuff            
+            self.update()
+
+            # draw stuff
+            self.draw()
+
+            # cap FPS if: limit_fps == True
+            if self.view.limit_fps: self.view.clock.tick(self.view.fps_max)
+            else: self.view.clock.tick()
+
+
+    def draw(self):
+        """draw screen"""
+        # draw code
+        if self.chess.status != 'game':
+            self.view.draw_screens(self.chess.status)
+        else:
+            self.view.draw_position(self.board, [])
+        
+        # update / flip screen.
+        pygame.display.flip()
+
+
+    def update(self):
+        """move guys."""
+        # player = self.chess.current_player
+        # if self.chess.player_list[player].player_type == 'AI':
+        #     self.chess.ai_move()
+        pass
+
+
+    def handle_events(self):
+        """handle events: keyboard, mouse, etc."""
+        events = pygame.event.get()
+
+        for event in events:
+            # event: quit
+            if event.type == pygame.QUIT: self.chess.play = False
             
-            if event.type == MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
+            # event: keydown
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE: self.chess.play = False
+                if event.key == K_q: self.chess.play = False
                 
-                # Left click
-                if event.button == 1:
-                    chess.process_click(x, y, is_up=False)
-
-                # Right click
-                if event.button == 3:
-                    x, y = pygame.mouse.get_pos()
-                    chess.process_right_click(x, y, is_up=False)
-
-            if event.type == MOUSEBUTTONUP:
+            # event: mousedown
+            elif event.type == MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()
-
-                # Left click
-                if event.button == 1:
-                    chess.process_click(x, y, is_up=True)
-
-                # Right click
-                if event.button == 3:                   
-                    chess.process_right_click(x, y, is_up=True)
-
-            #         left_click, _, right_click = pygame.mouse.get_pressed()
-
-            #         if left_click:
-
-            #             if getattr(chess, 'left_click'):
-            #                 pass
-
-            #             else:
-            #                 setattr(chess, 'is_clicked', True)
-            #                 setattr(chess, 'left_click', True)
-
-            #         elif right_click:
-            #             setattr(chess, 'right_click', True)
-                        
-            #             x, y = event.pos
-            #             chess.process_click(x, y)
-                    
-            #         if event.type == MOUSEBUTTONUP:
-            #             x, y = event.pos
-            #             chess.process_click(x, y)
+                if event.button == 1: self.chess.process_click(x, y, is_up=False)
+                if event.button == 3: self.chess.process_right_click(x, y, is_up=False)
             
-            # if chess.is_clicked is not None:
-            #     print(chess.is_clicked.moves(chess.board))
+            # event: mouseup
+            elif event.type == MOUSEBUTTONUP:
+                x, y = pygame.mouse.get_pos()
+                if event.button == 1: self.chess.process_click(x, y, is_up=True)
+                if event.button == 3: self.chess.process_right_click(x, y, is_up=True)
 
 
-if __name__ == "__main__": play()
+if __name__ == "__main__": 
+    chess = Game()
+    chess.play()    

@@ -35,7 +35,8 @@ class GameView:
         pygame.init()
         pygame.display.set_caption('Chess')
         self.clock = pygame.time.Clock()
-        self.clock.tick(60)
+        self.limit_fps = True
+        self.fps_max = 40
         
         self.border = border
         self.line_width = line_width
@@ -45,6 +46,7 @@ class GameView:
         self.screen_size = screen_size
         self.screen = pygame.display.set_mode((self.screen_size + 320, self.screen_size))
 
+        # Fonts
         self.font = pygame.font.SysFont(None, 30)
         self.big_font = pygame.font.SysFont(None, 40)
         self.small_font = pygame.font.SysFont(None, 20)
@@ -55,8 +57,13 @@ class GameView:
 
         self.square_width = self.size_of_bg[0] // 8
         self.square_height = self.size_of_bg[1] // 8
+        
+        # Pieces
+        self.pieces_image = self.PIECES_IMG.convert_alpha()
+        self.pieces_image = pygame.transform.scale(self.pieces_image, (self.square_width * 6, self.square_height * 2))
+        self.images = self.get_orig_images()
 
-        # Display starting position
+        # Buttons
         self.create_buttons()
 
 
@@ -80,16 +87,7 @@ class GameView:
         pass
 
 
-    def draw_start_position(self, board):
-        """Draw board and start position of pieces"""
-        self.pieces_image = self.PIECES_IMG.convert_alpha()
-        self.pieces_image = pygame.transform.scale(self.pieces_image, (self.square_width * 6, self.square_height * 2))
-        self.images = self.get_orig_images()
-
-        self.draw_position(board)
-
-
-    def draw_position(self, board, moves=[], dragged_piece=None):
+    def draw_position(self, board, moves=[]):
         self.screen.blit(self.background, (0, 0))
         self.draw_highlighed_tiles(board)
         self.draw_arrows(board)
@@ -109,14 +107,17 @@ class GameView:
         for arrow in board.arrow_coordinates:
             (x1, y1), (x2, y2) = arrow
             pygame.draw.rect(self.screen, self.GREEN, 
-                                (x1 * self.square_width, y1 * self.square_height, self.square_width, self.square_height), 0)
+                            (x1 * self.square_width, y1 * self.square_height, self.square_width, self.square_height), 0)
             pygame.draw.rect(self.screen, self.GREEN, 
-                                (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
+                            (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
 
 
     def draw_possible_moves(self, moves):
-        for (x, y) in moves:
-            self.screen.blit(self.images['circle_image_capture'], (x * self.square_width, (7 - y) * self.square_height))
+        for x, y in moves:
+            pygame.draw.rect(self.screen, self.BLUE, 
+                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
+                        
+            # self.screen.blit(self.images['circle_image_capture'], (x * self.square_width, y * self.square_height))
     
     
     def draw_all_pieces(self, board):
@@ -125,8 +126,7 @@ class GameView:
             for tile in rows:
                 if not isinstance(tile.state, Empty):
                     piece = board.get_piece(tile)
-                    y = (7 - piece.y) if player == 0 else piece.y
-                    self.screen.blit(self.pieces_image, (piece.x * self.square_width, y * self.square_height), piece.subsection)
+                    self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
 
 
     def draw_captured_pieces(self, board):
@@ -285,6 +285,7 @@ class GameView:
         images = self.rescale_images(**images)
         return images
         
+        
     def rescale_images(self, **kwargs):
         """Rescale the media so that each piece can fit in a square"""
         rescaled_images = {}
@@ -292,6 +293,7 @@ class GameView:
             image = pygame.transform.scale(image, (self.square_height, self.square_width))
             rescaled_images[key] = image
         return rescaled_images
+    
     
     def update_button_look(self, button, status, color, text_color):
         """Method to change look of buttons, based on the fact if they are
