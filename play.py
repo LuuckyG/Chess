@@ -43,11 +43,10 @@ class Game:
 
     def draw(self):
         """draw screen"""
+        
         # draw code
-        if self.chess.status != 'game':
-            self.view.draw_screens(self.chess.status)
-        else:
-            self.view.draw_position(self.board, [])
+        if self.chess.status != 'game': self.view.draw_screens(self.chess.status)
+        else: self.view.draw_position(self.board, self.chess.moves, self.chess.is_dragged)
         
         # update / flip screen.
         pygame.display.flip()
@@ -56,8 +55,10 @@ class Game:
     def update(self):
         """move guys."""
         # player = self.chess.current_player
-        # if self.chess.player_list[player].player_type == 'AI':
-        #     self.chess.ai_move()
+        # if self.chess.player_list[player].player_type == 'AI': self.chess.ai_move()
+        
+        # chess.check_move()
+        # chess.next_turn()
         pass
 
 
@@ -73,7 +74,7 @@ class Game:
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE: self.chess.play = False
                 if event.key == K_q: self.chess.play = False
-                
+            
             # event: mousedown
             elif event.type == MOUSEBUTTONDOWN:
                 x, y = pygame.mouse.get_pos()

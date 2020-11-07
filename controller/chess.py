@@ -48,7 +48,9 @@ class Chess:
         self.current_color = 'wb'[self.current_player]
         
         # Settings
-        self.settings = {'vs_computer': False, 'ai_level': 1}
+        self.settings = {'flip': False, 
+                         'vs_computer': False, 
+                         'ai_level': 1}
 
         # View
         self.view = GameView()
@@ -155,13 +157,20 @@ class Chess:
         tile = self.board.get_tile_at_pos(x, y)
 
         if is_up:
+            self.moves = self.is_clicked.moves(self.board, self.previous_move)
+            
+            # Check possible moves, and if possible
+            # make the move.
             if (x, y) != self.left_click_coordinates:
-                pass
+                if (x, y) in self.moves:
+                    self.make_move(self.is_clicked, 
+                                   self.left_click_coordinates[0], self.left_click_coordinates[1],
+                                   x, y)
+                self.moves = []
+                self.is_dragged = None
             else:
-                clicked_piece = self.is_clicked
-                self.moves = clicked_piece.moves(self.board, self.previous_move)
-                self.view.draw_position(self.board, self.moves)
-
+                # Show possible moves of piece
+                # Piece is not dragged
                 self.is_dragged = None
         else:
             if tile is not None:
@@ -172,7 +181,7 @@ class Chess:
                 else:
                     piece = self.board.get_piece(tile)
                     self.is_clicked = piece
-                    self.is_dragged = piece.id
+                    self.is_dragged = piece
 
                     self.left_click_coordinates = (x, y)
 
@@ -233,35 +242,59 @@ class Chess:
         """"""
         pass
 
+    
+    def next_turn(self):
+        """Update game state variables"""
+        
+        self.current_player = 0 if self.current_player == 1 else 1
+        self.current_color = 'wb'[self.current_player]
+        
+        # Only update move nr is white is back in turn
+        if self.current_player == 'w': self.move_nr += 1
+        if self.settings['flip']: self.is_flipped = not self.is_flipped
+        
 
     def check_move(self):
         """Check if move is valid"""
         pass
 
 
-    def make_move(self, x, y, x2, y2):
-        """Make valid move"""
-        player = self.position.player
-        color = 'wb'[player]
-        # enemy_color = opposite(color)
-        HMC = self.position.HMC
-
-        king_position = self.position.get_piece_position('K' + color)
-        king = self.position.get_piece(king_position)
+    def make_move(self, moving_piece, x1, y1, x2, y2):
+        # Get king and check for check etc
+        #TODO
         
-        if king.is_checkmate() or king.is_stalemate() or self.position.resignation(color):
-            # return play = False
-            pass
-        elif king.is_check():
-            pass
-        elif king.is_pinned():
-            # Find pinned piece and remove moves from possible moves
-            pass
-        else:
-            # Player can move everywhere, except the king into attacked squares
+        moving_piece.make_move(x2, y2)
+        
+        previous_tile = self.board.get_tile_at_pos(x1, y1)
+        next_tile = self.board.get_tile_at_pos(x2, y2)
+        
+        next_tile.state = moving_piece
+        previous_tile.state = Empty(x1, y1)
+        
 
-            # reset attacked squares
-            self.position.reset_attacking_squares()
+    # def make_move(self, x, y, x2, y2):
+    #     """Make valid move"""
+    #     player = self.position.player
+    #     color = 'wb'[player]
+    #     # enemy_color = opposite(color)
+    #     HMC = self.position.HMC
+
+    #     king_position = self.position.get_piece_position('K' + color)
+    #     king = self.position.get_piece(king_position)
+        
+    #     if king.is_checkmate() or king.is_stalemate() or self.position.resignation(color):
+    #         # return play = False
+    #         pass
+    #     elif king.is_check():
+    #         pass
+    #     elif king.is_pinned():
+    #         # Find pinned piece and remove moves from possible moves
+    #         pass
+    #     else:
+    #         # Player can move everywhere, except the king into attacked squares
+
+    #         # reset attacked squares
+    #         self.position.reset_attacking_squares()
 
         # # Check if player is not in check
         # king_position = get_piece_position(self.position, 'K' + color)  # Find position of the king of player

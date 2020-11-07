@@ -178,6 +178,14 @@ class Piece:
                     break
 
 
+    def make_move(self, x, y):
+        if not self.is_pinned:
+            self.x = x
+            self.y = y
+            self.has_moved = True
+            self.set_piece_value(self.value_table)
+        
+
 class Pawn(Piece):
     """Class for pawns"""
 

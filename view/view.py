@@ -87,12 +87,13 @@ class GameView:
         pass
 
 
-    def draw_position(self, board, moves=[]):
+    def draw_position(self, board, moves, dragged_piece):
         self.screen.blit(self.background, (0, 0))
         self.draw_highlighed_tiles(board)
         self.draw_arrows(board)
         self.draw_possible_moves(moves)
-        self.draw_all_pieces(board)
+        self.draw_all_pieces(board, dragged_piece)
+        if dragged_piece: self.draw_dragged_piece(dragged_piece)
         self.draw_captured_pieces(board)
         
         
@@ -114,19 +115,24 @@ class GameView:
 
     def draw_possible_moves(self, moves):
         for x, y in moves:
-            pygame.draw.rect(self.screen, self.BLUE, 
-                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
-                        
-            # self.screen.blit(self.images['circle_image_capture'], (x * self.square_width, y * self.square_height))
+            self.screen.blit(self.images['circle_image_green'], (x * self.square_width, y * self.square_height))
     
     
-    def draw_all_pieces(self, board):
+    def draw_all_pieces(self, board, dragged_piece):
         player = 0 # Show white under (make this flexible)
         for rows in board.position:
             for tile in rows:
                 if not isinstance(tile.state, Empty):
                     piece = board.get_piece(tile)
-                    self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
+                    if dragged_piece is not None: 
+                        if piece.id != dragged_piece.id: 
+                            self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
+                    else: self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
+
+    
+    def draw_dragged_piece(self, dragged_piece):
+        x, y = pygame.mouse.get_pos()
+        self.screen.blit(self.pieces_image, (x - self.square_width / 2, y - self.square_height / 2), dragged_piece.subsection)
 
 
     def draw_captured_pieces(self, board):
