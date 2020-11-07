@@ -81,7 +81,7 @@ class Board:
         Args:
         - x: x-coordinate of mouse at click
         - y: y-coordinate of mouse at click
-        """
+        """       
         for rows in self.position:
             for tile in rows:
                 if tile.rect.collidepoint(x, y):

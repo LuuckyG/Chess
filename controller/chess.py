@@ -153,19 +153,19 @@ class Chess:
 
     def play_game(self, mouse_x, mouse_y, is_up):
         """"""
-        x, y = self.pixel_coord_to_chess(mouse_x, mouse_y)
-        tile = self.board.get_tile_at_pos(x, y)
+        tile_x, tile_y = self.pixel_coord_to_tile(mouse_x, mouse_y)
+        tile = self.board.get_tile_at_pos(tile_x, tile_y)
 
         if is_up:
             self.moves = self.is_clicked.moves(self.board, self.previous_move)
-            
+
             # Check possible moves, and if possible
             # make the move.
-            if (x, y) != self.left_click_coordinates:
-                if (x, y) in self.moves:
+            if (tile_x, tile_y) != self.left_click_coordinates:
+                if (tile_x, tile_y) in self.moves:
                     self.make_move(self.is_clicked, 
                                    self.left_click_coordinates[0], self.left_click_coordinates[1],
-                                   x, y)
+                                   tile_x, tile_y)
                 self.moves = []
                 self.is_dragged = None
             else:
@@ -183,7 +183,7 @@ class Chess:
                     self.is_clicked = piece
                     self.is_dragged = piece
 
-                    self.left_click_coordinates = (x, y)
+                    self.left_click_coordinates = (tile_x, tile_y)
 
 
     def reset_highlights_and_arrows(self):
@@ -208,7 +208,7 @@ class Chess:
                 or released.
         """
         
-        x, y = self.pixel_coord_to_chess(mouse_x, mouse_y)
+        x, y = self.pixel_coord_to_tile(mouse_x, mouse_y)
 
         # Mouse button is released
         if is_up:
@@ -259,17 +259,19 @@ class Chess:
         pass
 
 
-    def make_move(self, moving_piece, x1, y1, x2, y2):
+    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2):
         # Get king and check for check etc
         #TODO
         
-        moving_piece.make_move(x2, y2)
+        piece_y1 = self.tile_coord_to_piece(tile_y1)
+        piece_y2 = self.tile_coord_to_piece(tile_y2)
+        moving_piece.make_move(x2, piece_y2)
         
-        previous_tile = self.board.get_tile_at_pos(x1, y1)
-        next_tile = self.board.get_tile_at_pos(x2, y2)
+        previous_tile = self.board.get_tile_at_pos(x1, tile_y1)
+        next_tile = self.board.get_tile_at_pos(x2, tile_y2)
         
         next_tile.state = moving_piece
-        previous_tile.state = Empty(x1, y1)
+        previous_tile.state = Empty(x1, piece_y1)
         
 
     # def make_move(self, x, y, x2, y2):
@@ -370,6 +372,10 @@ class Chess:
         return board_x * self.view.square_width, board_y * self.view.square_height
 
 
-    def pixel_coord_to_chess(self, pixel_x, pixel_y):
+    def pixel_coord_to_tile(self, pixel_x, pixel_y):
         """Get board coordinates from pixel board coordinates"""
         return pixel_x // self.view.square_width, pixel_y // self.view.square_height
+    
+    
+    def tile_coord_to_piece(self, y):
+        return y if self.board.is_flipped else (7 - y)

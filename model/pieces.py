@@ -66,7 +66,6 @@ class Piece:
         """
 
         attack_type = 'direct' if direct_attack else 'indirect'
-        y = y if board.is_flipped else 7 - y
         tile = board.get_tile_at_pos(x, y)
         
         if tile is not None:
@@ -105,7 +104,8 @@ class Piece:
                 x_possible += dx
 
                 if 0 <= x_possible <= 7:
-                    direct_attack = self.check_square(board, x_possible, self.y, direct_attack)
+                    y = self.y if board.is_flipped else (7 - self.y)
+                    direct_attack = self.check_square(board, x_possible, y, direct_attack)
                 else:
                     break
                 
@@ -118,7 +118,7 @@ class Piece:
         possibly capture another piece."""
         
         for dy in self.direction:
-            y_possible = self.y
+            y_possible = self.y if board.is_flipped else (7 - self.y)
             direct_attack = True
             self.is_blocked = False
 
@@ -141,7 +141,7 @@ class Piece:
 
         for d in self.direction:
             x_possible = self.x
-            y_possible = self.y
+            y_possible = self.y if board.is_flipped else (7 - self.y)
             direct_attack = True
             self.is_blocked = False
 
@@ -160,7 +160,7 @@ class Piece:
 
             # Reset search square
             x_possible = self.x
-            y_opposite = self.y
+            y_opposite = self.y if board.is_flipped else (7 - self.y)
             direct_attack = True
             self.is_blocked = False
 
@@ -195,8 +195,6 @@ class Pawn(Piece):
         
         # En Passant Target
         self.EPT = -1
-        self.walk_direction = 1 if self.color == 'w' else -1
-        
         self.index = 5
         self.points = 1
         self.set_value_table()
@@ -218,6 +216,10 @@ class Pawn(Piece):
     def moves(self, board, previous_move):
         self.is_blocked = False
         self.valid_moves = []
+        self.walk_direction = 1
+        if not board.is_flipped and self.color == 'w': self.walk_direction = -1
+        if board.is_flipped and self.color == 'b': self.walk_direction = -1
+
         self.direction = [self.walk_direction]
         max_range = 2 if not self.has_moved else 1
         
@@ -247,17 +249,16 @@ class Pawn(Piece):
         ept_y = 4 - v
                 
         if self.y == ept_y:
-            y = self.y if board.is_flipped else 7 - self.y
             
             if self.x != 0:
-                tile = board.get_tile_at_pos(self.x - 1, y)
+                tile = board.get_tile_at_pos(self.x - 1, self.y)
                 if previous_move == [(self.x - 1, self.y + w), (self.x - 1, self.y)] \
                     and isinstance(tile.state, Pawn):
                         self.valid_moves.append((self.x - 1, self.y + self.walk_direction))
                         self.EPT = (self.x - 1, self.y + self.walk_direction)
             
             if self.x != 7:
-                tile = board.get_tile_at_pos(self.x + 1, y)
+                tile = board.get_tile_at_pos(self.x + 1, self.y)
                 if previous_move == [(self.x + 1, self.y + w), (self.x + 1, self.y)] \
                     and isinstance(tile.state, Pawn):
                         self.valid_moves.append((self.x + 1, self.y + self.walk_direction))
@@ -303,32 +304,32 @@ class Knight(Piece):
             if 0 <= x_possible <= 7:
                 # Now check whether the knight can jump to any square d = |2y| away
                 for dy in self.direction:
-                    y = self.y if board.is_flipped else 7 - self.y
-                    y_possible = y + 2 * dy
+                    y_possible = self.y + 2 * dy
                     if 0 <= y_possible <= 7:
-                        tile = board.get_tile_at_pos(x_possible, y_possible)
+                        tile_y = y_possible if board.is_flipped else 7 - y_possible
+                        tile = board.get_tile_at_pos(x_possible, tile_y)
                         if isinstance(tile.state, Empty):
-                            self.valid_moves.append((x_possible, y_possible))
+                            self.valid_moves.append((x_possible, tile_y))
                         else: 
                             if tile.state.color == self.enemy_color:
-                                self.valid_moves.append((x_possible, y_possible))
+                                self.valid_moves.append((x_possible, tile_y))
 
         for dy in self.direction:
             # Possible squares that are +2/-2 in x, +1/-1 in y away from original square
-            y = self.y if board.is_flipped else 7 - self.y
-            y_possible = y + dy
+            y_possible = self.y + dy
            
             if 0 <= y_possible <= 7:
                 # Now check whether the knight can jump to any square d = |2x| away
                 for dx in self.direction:
                     x_possible = self.x + 2 * dx
                     if 0 <= x_possible <= 7:
-                        tile = board.get_tile_at_pos(x_possible, y_possible)
+                        tile_y = y_possible if board.is_flipped else 7 - y_possible
+                        tile = board.get_tile_at_pos(x_possible, tile_y)
                         if isinstance(tile.state, Empty):
-                            self.valid_moves.append((x_possible, y_possible))
+                            self.valid_moves.append((x_possible, tile_y))
                         else: 
                             if tile.state.color == self.enemy_color:
-                                self.valid_moves.append((x_possible, y_possible))
+                                self.valid_moves.append((x_possible, tile_y))
         
         return self.valid_moves
 

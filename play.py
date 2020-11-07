@@ -14,9 +14,6 @@ class Game:
         self.chess = Chess()
         self.view = self.chess.view
         
-        self.chess.start_game()
-        self.board = self.chess.board
-        
 
     def play(self):
         """Game() main loop.
@@ -25,6 +22,9 @@ class Game:
             2. move stuff
             3. draw stuff
         """
+        self.chess.start_game()
+        self.board = self.chess.board
+        
         while self.chess.play:
             
             # get input            
