@@ -1,6 +1,6 @@
 from view.view import GameView
 from model.board import Board
-from model.pieces import Empty
+from model.pieces import Empty, Pawn
 
 
 class Chess:
@@ -143,7 +143,10 @@ class Chess:
         The default settings are: human vs. human."""
 
         # Create players
-        #TODO
+        self.player_list.append('Human')
+        
+        if self.settings['vs_computer']: self.player_list.append('AI')
+        else: self.player_list.append('Human')
 
         # Change starting screen to Chess board
         self.board = Board(square_width=self.view.square_width, 
@@ -156,38 +159,40 @@ class Chess:
         tile_x, tile_y = self.pixel_coord_to_tile(mouse_x, mouse_y)
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
 
-        if is_up:
-            self.moves = self.is_clicked.moves(self.board, self.previous_move)
+        if is_up and self.is_clicked:
+            valid_move = self.check_move()
 
             # Check possible moves, and if possible
             # make the move.
-            if (tile_x, tile_y) != self.left_click_coordinates:
+            if valid_move and (tile_x, tile_y) != self.left_click_coordinates:
                 if (tile_x, tile_y) in self.moves:
+                    
+                    if isinstance(self.is_clicked, Pawn) and (tile_x, tile_y) == self.is_clicked.EPT: is_en_passant = True
+                    else: is_en_passant = False
+                    
                     self.make_move(self.is_clicked, 
                                    self.left_click_coordinates[0], self.left_click_coordinates[1],
-                                   tile_x, tile_y)
+                                   tile_x, tile_y, 
+                                   en_passant=is_en_passant)
                 self.moves = []
+                self.is_clicked = None
                 self.is_dragged = None
-            else:
-                # Show possible moves of piece
-                # Piece is not dragged
-                self.is_dragged = None
+            else: self.is_dragged = None
         else:
-            if tile is not None:
+            if tile is not None and not (self.is_clicked and self.is_dragged):
+                piece = self.board.get_piece(tile)
 
-                if isinstance(tile.state, Empty):
-                    self.reset_highlights_and_arrows()
-
-                else:
-                    piece = self.board.get_piece(tile)
+                if piece and piece.color == self.current_color:
                     self.is_clicked = piece
                     self.is_dragged = piece
-
                     self.left_click_coordinates = (tile_x, tile_y)
+                
+                else: self.reset_highlights_and_arrows()
 
 
     def reset_highlights_and_arrows(self):
         """Reset highlights and arrows from board"""
+        self.clicked = None
         self.moves = []
         self.board.highlighted_tiles = []
         self.board.arrow_coordinates = []
@@ -222,8 +227,7 @@ class Chess:
                 if self.remove_arrow(arrow):
                     index = self.board.arrow_coordinates.index(arrow)
                     self.board.arrow_coordinates.pop(index)
-                else:
-                    self.board.arrow_coordinates.append(arrow)                   
+                else: self.board.arrow_coordinates.append(arrow)                   
 
             else:
                 # User does not want to draw arrow but wants to highlight tiles
@@ -234,8 +238,7 @@ class Chess:
                     self.board.highlighted_tiles.pop(index)
 
         # Mouse button is pressed
-        else:
-            self.right_click_coordinates = (x, y)          
+        else: self.right_click_coordinates = (x, y)          
 
 
     def ai_move(self):
@@ -243,9 +246,57 @@ class Chess:
         pass
 
     
+    def update(self):
+        
+        
+        
+        # if self.play: self.check_for_resign()
+        # if self.play: self.check_for_draw()
+        # if self.play: is_check = self.check_for_check()
+        # if self.play: self.check_for_win(is_check)
+        # if self.play: self.check_move()
+
+        pass
+
+
+    def check_move(self):
+        """Check if move is valid"""
+        self.board.check_for_pin(self.current_color, self.is_clicked)
+
+        if not self.is_clicked.is_pinned: 
+            self.moves = self.is_clicked.moves(self.board, self.previous_move)
+            return True
+
+
+    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2, en_passant):
+        # Get king and check for check etc
+        #TODO
+        # self.board.update_board()
+
+        piece_y1 = self.tile_coord_to_piece(tile_y1)
+        piece_y2 = self.tile_coord_to_piece(tile_y2)
+        moving_piece.make_move(x2, piece_y2)
+        
+        previous_tile = self.board.get_tile_at_pos(x1, tile_y1)
+        previous_tile.state = Empty(x1, piece_y1)
+        
+        next_tile = self.board.get_tile_at_pos(x2, tile_y2)         
+        next_tile.state = moving_piece
+        
+        if en_passant: 
+            tile_ept_y = tile_y2 - 1 if self.is_flipped and self.current_color == 'w' else tile_y2 + 1
+            tile_ept_y = tile_y2 + 1 if not self.is_flipped and self.current_color == 'w' else tile_y2 - 1
+            piece_ept_y = self.tile_coord_to_piece(tile_ept_y)
+            en_passant_target = self.board.get_tile_at_pos(x2, tile_ept_y)
+            en_passant_target.state = Empty(x2, piece_ept_y)
+        
+        self.previous_move = [(x1, tile_y1), (x2, tile_y2)]
+        
+        self.next_turn()
+        
+        
     def next_turn(self):
         """Update game state variables"""
-        
         self.current_player = 0 if self.current_player == 1 else 1
         self.current_color = 'wb'[self.current_player]
         
@@ -253,27 +304,7 @@ class Chess:
         if self.current_player == 'w': self.move_nr += 1
         if self.settings['flip']: self.is_flipped = not self.is_flipped
         
-
-    def check_move(self):
-        """Check if move is valid"""
-        pass
-
-
-    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2):
-        # Get king and check for check etc
-        #TODO
         
-        piece_y1 = self.tile_coord_to_piece(tile_y1)
-        piece_y2 = self.tile_coord_to_piece(tile_y2)
-        moving_piece.make_move(x2, piece_y2)
-        
-        previous_tile = self.board.get_tile_at_pos(x1, tile_y1)
-        next_tile = self.board.get_tile_at_pos(x2, tile_y2)
-        
-        next_tile.state = moving_piece
-        previous_tile.state = Empty(x1, piece_y1)
-        
-
     # def make_move(self, x, y, x2, y2):
     #     """Make valid move"""
     #     player = self.position.player
@@ -354,6 +385,12 @@ class Chess:
 
         # return self.position
 
+
+    def check_for_check(self):
+        king_x, king_y = self.board.king_position[self.current_color]
+        king_tile = self.get_tile_at_pos(king_x, king_y)
+        king = self.get_piece(king_tile)
+        return king.in_check()
 
     def check_end_game(self):
         """Check if move causes game to end with checkmate or stalemate"""

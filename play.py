@@ -54,11 +54,10 @@ class Game:
 
     def update(self):
         """move guys."""
-        # player = self.chess.current_player
-        # if self.chess.player_list[player].player_type == 'AI': self.chess.ai_move()
         
-        # chess.check_move()
-        # chess.next_turn()
+        # if self.chess.player_list[self.chess.current_player] == 'AI': self.chess.ai_move()
+        
+        # chess.update()
         pass
 
 

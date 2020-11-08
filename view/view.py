@@ -89,12 +89,13 @@ class GameView:
 
     def draw_position(self, board, moves, dragged_piece):
         self.screen.blit(self.background, (0, 0))
+        self.draw_captured_pieces(board)
         self.draw_highlighed_tiles(board)
         self.draw_arrows(board)
         self.draw_possible_moves(moves)
         self.draw_all_pieces(board, dragged_piece)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)
-        self.draw_captured_pieces(board)
+        
         
         
     def draw_highlighed_tiles(self, board):
@@ -136,7 +137,7 @@ class GameView:
 
 
     def draw_captured_pieces(self, board):
-        pass
+        self.screen.fill(self.BLACK, (self.screen_size, 0, 320, self.screen_size))
 
     
     # def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):

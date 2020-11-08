@@ -28,6 +28,7 @@ class Board:
         self.highlighted_tiles = []
         self.arrow_coordinates = []
         self.pieces = {'w': [], 'b': []}
+        self.king_position = {'w': (), 'b': ()}
         self.is_flipped = is_flipped
         
         self.setup()
@@ -51,6 +52,7 @@ class Board:
          
                     if symbol == 'K':
                         piece = King(self.id, symbol, color, x, y, self.square_width, self.square_height)
+                        self.king_position[color] = (x, tile_y)
                     elif symbol == 'Q':
                         piece = Queen(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'B':
@@ -94,3 +96,19 @@ class Board:
         if tile is not None:
             if not isinstance(tile.state, Empty):
                 return tile.state
+            
+    
+    def check_for_pin(self, color, moving_piece):
+        king_x, king_y = self.king_position[color]
+        king_tile = self.get_tile_at_pos(king_x, king_y)
+        king = self.get_piece(king_tile)
+        
+        if len(king.attacked_by['indirect']) > 0:
+            king_attackers = king.attacked_by['indirect']
+            if len(moving_piece.is_attacked_by['direct']) > 0:
+                for attacker in moving_piece.is_attacked_by['direct']:
+                    if attacker in king_attackers:
+                        moving_piece.is_pinned = True
+                        return
+        else: moving_piece.is_pinned = False
+            

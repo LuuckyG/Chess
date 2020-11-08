@@ -231,38 +231,40 @@ class Pawn(Piece):
     
     
     def captures(self, board):
+        tile_y = self.y if board.is_flipped else 7 - self.y
         if self.x != 0:
-            tile = board.get_tile_at_pos(self.x - 1, self.y + self.walk_direction)
+            tile = board.get_tile_at_pos(self.x - 1, tile_y + self.walk_direction)
             if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
-                self.valid_moves.append((self.x - 1, self.y + self.walk_direction)) 
+                self.valid_moves.append((self.x - 1, tile_y + self.walk_direction)) 
                      
         if self.x != 7:
-            tile = board.get_tile_at_pos(self.x + 1, self.y + self.walk_direction)  
+            tile = board.get_tile_at_pos(self.x + 1, tile_y + self.walk_direction)  
             if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
-                self.valid_moves.append((self.x + 1, self.y + self.walk_direction)) 
+                self.valid_moves.append((self.x + 1, tile_y + self.walk_direction)) 
     
     
     def en_passant(self, board, previous_move):
+        """En Passant"""
         v = 0 if self.color == 'w' else 1
         w = 2 * self.walk_direction
         
         ept_y = 4 - v
                 
         if self.y == ept_y:
-            
+            tile_y = self.y if board.is_flipped else 7 - self.y
             if self.x != 0:
-                tile = board.get_tile_at_pos(self.x - 1, self.y)
-                if previous_move == [(self.x - 1, self.y + w), (self.x - 1, self.y)] \
+                tile = board.get_tile_at_pos(self.x - 1, tile_y)
+                if previous_move == [(self.x - 1, tile_y + w), (self.x - 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
-                        self.valid_moves.append((self.x - 1, self.y + self.walk_direction))
-                        self.EPT = (self.x - 1, self.y + self.walk_direction)
+                        self.valid_moves.append((self.x - 1, tile_y + self.walk_direction))
+                        self.EPT = (self.x - 1, tile_y + self.walk_direction)
             
             if self.x != 7:
-                tile = board.get_tile_at_pos(self.x + 1, self.y)
-                if previous_move == [(self.x + 1, self.y + w), (self.x + 1, self.y)] \
+                tile = board.get_tile_at_pos(self.x + 1, tile_y)
+                if previous_move == [(self.x + 1, tile_y + w), (self.x + 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
-                        self.valid_moves.append((self.x + 1, self.y + self.walk_direction))
-                        self.EPT = (self.x + 1, self.y + self.walk_direction)
+                        self.valid_moves.append((self.x + 1, tile_y + self.walk_direction))
+                        self.EPT = (self.x + 1, tile_y + self.walk_direction)
                        
     
     def promotion(self):
