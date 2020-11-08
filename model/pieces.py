@@ -84,7 +84,7 @@ class Piece:
             else:
                 tile.state.attacked_by[attack_type].append(self)
                 
-                if direct_attack:
+                if direct_attack and not isinstance(tile, King):
                     self.valid_moves.append((tile.x, tile.y))
         
         return direct_attack
@@ -197,6 +197,7 @@ class Pawn(Piece):
         self.EPT = -1
         self.index = 5
         self.points = 1
+        self.promotion_target = None
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
@@ -474,25 +475,35 @@ class King(Piece):
 
 
     def castling_rights(self, board):
-        position = board.position
+        self.castling_loc = []
         
+        if self.has_moved: 
+            self.castling = [False, False]
+            return
+        
+        if board.is_flipped: y = 0 if self.color == 'w' else 7
+        else: y = 7 if self.color == 'w' else 0
+            
         # Kingside castle
-        if self.castling[0] and not self.has_moved:
-            if (isinstance(position[7 * self.player][5], Empty) and 
-                isinstance(position[7 * self.player][6], Empty)):
-                self.valid_moves.append((6, 7 * self.player))
+        rook_tile = board.get_tile_at_pos(7, y)
+        rook = board.get_piece(rook_tile)
+            
+        if self.castling[0] and not rook.has_moved:
+            if isinstance(board.get_tile_at_pos(5, y).state, Empty) and \
+               isinstance(board.get_tile_at_pos(6, y).state, Empty):
+               self.valid_moves.append((6, y))
+               self.castling_loc.append((6, y))
                 
         # Queenside castle
-        if self.castling[1] and not self.has_moved:
-            if (isinstance(position[7 * self.player][1], Empty) and 
-                isinstance(position[7 * self.player][2], Empty) and 
-                isinstance(position[7 * self.player][3], Empty)):
-                self.valid_moves.append((2, 7 * self.player))
-
-
-    # def is_pinned(self):
-    #     if len(king.attacked_by['indirect']) >= 1:
-    #         return True
+        rook_tile = board.get_tile_at_pos(0, y)
+        rook = board.get_piece(rook_tile)
+            
+        if self.castling[1] and not rook.has_moved:
+            if isinstance(board.get_tile_at_pos(1, y).state, Empty) and \
+                isinstance(board.get_tile_at_pos(2, y).state, Empty) and \
+                isinstance(board.get_tile_at_pos(3, y).state, Empty):
+                self.valid_moves.append((2, y))
+                self.castling_loc.append((2, y))
 
 
     def in_check(self):

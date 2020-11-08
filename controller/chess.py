@@ -1,6 +1,6 @@
 from view.view import GameView
 from model.board import Board
-from model.pieces import Empty, Pawn
+from model.pieces import Empty, Pawn, King
 
 
 class Chess:
@@ -167,17 +167,21 @@ class Chess:
             if valid_move and (tile_x, tile_y) != self.left_click_coordinates:
                 if (tile_x, tile_y) in self.moves:
                     
-                    if isinstance(self.is_clicked, Pawn) and (tile_x, tile_y) == self.is_clicked.EPT: is_en_passant = True
-                    else: is_en_passant = False
-                    
+                    if isinstance(self.is_clicked, King): self.board.king_position[self.current_color] = (tile_x, tile_y)
+                    en_passant, promotion, castling = self.special_moves(tile_x, tile_y)
+
                     self.make_move(self.is_clicked, 
                                    self.left_click_coordinates[0], self.left_click_coordinates[1],
                                    tile_x, tile_y, 
-                                   en_passant=is_en_passant)
+                                   en_passant,
+                                   promotion,
+                                   castling)
                 self.moves = []
                 self.is_clicked = None
                 self.is_dragged = None
+                
             else: self.is_dragged = None
+        
         else:
             if tile is not None and not (self.is_clicked and self.is_dragged):
                 piece = self.board.get_piece(tile)
@@ -268,10 +272,42 @@ class Chess:
             return True
 
 
-    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2, en_passant):
-        # Get king and check for check etc
-        #TODO
-        # self.board.update_board()
+    def special_moves(self, tile_x, tile_y):
+        """[summary]
+
+        Args:
+            tile_x ([type]): [description]
+            tile_y ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        
+        if isinstance(self.is_clicked, Pawn) and (tile_x, tile_y) == self.is_clicked.EPT: en_passant = True
+        else: en_passant = False
+        
+        # if isinstance(self.is_clicked, Pawn) and tile_y == self.promotion_target: promotion = True
+        # else: promotion = False
+        
+        if isinstance(self.is_clicked, King) and (tile_x, tile_y) in self.is_clicked.castling_loc: castling = True
+        else: castling = False
+        
+        return en_passant, False, castling
+    
+
+    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2, en_passant, promotion, castling):
+        """Make the move and update board variables
+
+        Args:
+            moving_piece (Piece): [description]
+            x1 (int): [description]
+            tile_y1 (int): [description]
+            x2 (int): [description]
+            tile_y2 (int): [description]
+            en_passant (bool): [description]
+            promotion (bool): [description]
+            castling (bool): [description]
+        """
 
         piece_y1 = self.tile_coord_to_piece(tile_y1)
         piece_y2 = self.tile_coord_to_piece(tile_y2)
@@ -280,15 +316,38 @@ class Chess:
         previous_tile = self.board.get_tile_at_pos(x1, tile_y1)
         previous_tile.state = Empty(x1, piece_y1)
         
-        next_tile = self.board.get_tile_at_pos(x2, tile_y2)         
+        next_tile = self.board.get_tile_at_pos(x2, tile_y2)
         next_tile.state = moving_piece
         
         if en_passant: 
+            # Capture other pawn
             tile_ept_y = tile_y2 - 1 if self.is_flipped and self.current_color == 'w' else tile_y2 + 1
             tile_ept_y = tile_y2 + 1 if not self.is_flipped and self.current_color == 'w' else tile_y2 - 1
             piece_ept_y = self.tile_coord_to_piece(tile_ept_y)
             en_passant_target = self.board.get_tile_at_pos(x2, tile_ept_y)
             en_passant_target.state = Empty(x2, piece_ept_y)
+        
+        if promotion:
+            # Create different tile state
+            pass
+        
+        if castling:
+            # Move the rook
+            if x2 == 2: 
+                rook_tile = self.board.get_tile_at_pos(0, tile_y2)
+                new_tile = self.board.get_tile_at_pos(3, tile_y2)
+            else: 
+                rook_tile = self.board.get_tile_at_pos(7, tile_y2)
+                new_tile = self.board.get_tile_at_pos(5, tile_y2)
+            
+            rook = self.board.get_piece(rook_tile)
+            rook.x = new_tile.x
+            rook.y = piece_y2
+            
+            new_tile.state = rook
+            rook_tile.state = Empty(x2, piece_y2)
+            
+            
         
         self.previous_move = [(x1, tile_y1), (x2, tile_y2)]
         
