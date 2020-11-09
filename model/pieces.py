@@ -6,7 +6,7 @@ class Empty:
     def __init__(self, x, y):       
         self.x = x
         self.y = y
-        self.attacked_by = {'direct': [], 'indirect': []}
+        self.attacked_by = {'direct': set(), 'indirect': set()}
         self.coordinate = self.LETTERS[self.x] + str(self.y + 1)
         
 
@@ -31,8 +31,8 @@ class Piece:
         self.is_pinned = False
         self.has_moved = False
 
-        self.attacks = {'direct': [], 'indirect': []}
-        self.attacked_by = {'direct': [], 'indirect': []}
+        self.attacks = {'direct': set(), 'indirect': set()}
+        self.attacked_by = {'direct': set(), 'indirect': set()}
 
         self.direction = [-1, 1]
         self.set_coordinate()
@@ -71,8 +71,8 @@ class Piece:
         if tile is not None:
             if not isinstance(tile.state, Empty):
                 if tile.state.color != self.color and not self.is_blocked:
-                    tile.state.attacked_by[attack_type].append(self)
-                    self.attacks[attack_type].append(tile.state)
+                    tile.state.attacked_by[attack_type].add(self)
+                    self.attacks[attack_type].add(tile.state)
                     
                     if direct_attack:
                         self.valid_moves.append((tile.x, tile.y))
@@ -82,7 +82,7 @@ class Piece:
                     
                 return False
             else:
-                tile.state.attacked_by[attack_type].append(self)
+                tile.state.attacked_by[attack_type].add(self)
                 
                 if direct_attack and not isinstance(tile, King):
                     self.valid_moves.append((tile.x, tile.y))
@@ -197,7 +197,6 @@ class Pawn(Piece):
         self.EPT = -1
         self.index = 5
         self.points = 1
-        self.promotion_target = None
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
         self.set_piece_value(self.value_table)
@@ -214,7 +213,7 @@ class Pawn(Piece):
                             [0, 0, 0, 0, 0, 0, 0, 0]]
     
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         self.is_blocked = False
         self.valid_moves = []
         self.walk_direction = 1
@@ -226,7 +225,7 @@ class Pawn(Piece):
         
         self.vertical_moves(board=board, max_range=max_range)
         self.captures(board=board)
-        self.en_passant(board=board, previous_move=previous_move)
+        self.en_passant(board=board)
         self.promotion()
         return self.valid_moves
     
@@ -244,7 +243,7 @@ class Pawn(Piece):
                 self.valid_moves.append((self.x + 1, tile_y + self.walk_direction)) 
     
     
-    def en_passant(self, board, previous_move):
+    def en_passant(self, board):
         """En Passant"""
         v = 0 if self.color == 'w' else 1
         w = 2 * self.walk_direction
@@ -255,14 +254,14 @@ class Pawn(Piece):
             tile_y = self.y if board.is_flipped else 7 - self.y
             if self.x != 0:
                 tile = board.get_tile_at_pos(self.x - 1, tile_y)
-                if previous_move == [(self.x - 1, tile_y + w), (self.x - 1, tile_y)] \
+                if board.previous_move == [(self.x - 1, tile_y + w), (self.x - 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
                         self.valid_moves.append((self.x - 1, tile_y + self.walk_direction))
                         self.EPT = (self.x - 1, tile_y + self.walk_direction)
             
             if self.x != 7:
                 tile = board.get_tile_at_pos(self.x + 1, tile_y)
-                if previous_move == [(self.x + 1, tile_y + w), (self.x + 1, tile_y)] \
+                if board.previous_move == [(self.x + 1, tile_y + w), (self.x + 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
                         self.valid_moves.append((self.x + 1, tile_y + self.walk_direction))
                         self.EPT = (self.x + 1, tile_y + self.walk_direction)
@@ -275,8 +274,8 @@ class Pawn(Piece):
 class Knight(Piece):
     """Class for knights"""
     
-    def __init__(self, id, name, color, x, y, square_width, square_height):
-        super().__init__(id, name, color, x, y, square_width, square_height)
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 3
         self.points = 3
         self.set_value_table()
@@ -295,7 +294,7 @@ class Knight(Piece):
                             [-50, -90, -30, -30, -30, -30, -90, -50]]
 
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         """A knight can either move +2/-2 in x direction and +1/-1 in y direction, or the other way around"""
 
         self.valid_moves = []
@@ -340,8 +339,8 @@ class Knight(Piece):
 class Bishop(Piece):
     """Class for bishops"""
 
-    def __init__(self, id, name, color, x, y, square_width, square_height):
-        super().__init__(id, name, color, x, y, square_width, square_height)
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 2
         self.points = 3
         self.set_value_table()
@@ -360,7 +359,7 @@ class Bishop(Piece):
                             [-20, -10, -90, -10, -10, -90, -10, -20]]
     
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         self.valid_moves = []
         self.diagonal_moves(board=board, max_range=7)
         return self.valid_moves
@@ -369,8 +368,8 @@ class Bishop(Piece):
 class Rook(Piece):
     """Class for rooks"""
     
-    def __init__(self, id, name, color, x, y, square_width, square_height):
-        super().__init__(id, name, color, x, y, square_width, square_height)
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 4
         self.points = 5
         self.set_value_table()
@@ -389,7 +388,7 @@ class Rook(Piece):
                             [0, 0, 0, 5, 5, 0, 0, 0]]
 
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         self.valid_moves = []
         self.horizontal_moves(board=board, max_range=7)
         self.vertical_moves(board=board, max_range=7)
@@ -399,8 +398,8 @@ class Rook(Piece):
 class Queen(Piece):
     """Class for the queen"""
     
-    def __init__(self, id, name, color, x, y, square_width, square_height):
-        super().__init__(id, name, color, x, y, square_width, square_height)
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 1
         self.points = 9
         self.set_value_table()
@@ -419,7 +418,7 @@ class Queen(Piece):
                             [-20, -10, -10, 70, -5, -10, -10, -20]]
 
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         self.valid_moves = []
         self.horizontal_moves(board=board, max_range=7)
         self.vertical_moves(board=board, max_range=7)
@@ -430,8 +429,8 @@ class Queen(Piece):
 class King(Piece):
     """Class for the king"""
     
-    def __init__(self, id, name, color, x, y, square_width, square_height):
-        super().__init__(id, name, color, x, y, square_width, square_height)
+    def __init__(self, id, symbol, color, x, y, square_width, square_height):
+        super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 0
         self.points = 9999
         self.castling = [True, True]
@@ -462,7 +461,7 @@ class King(Piece):
                             [-50, -30, -30, -30, -30, -30, -30, -50]]
 
 
-    def moves(self, board, previous_move):
+    def moves(self, board):
         """For the king, one need to checks the 8 surrounding squares, 
         for being in check, and castling options."""
         
@@ -489,8 +488,11 @@ class King(Piece):
         rook = board.get_piece(rook_tile)
             
         if self.castling[0] and not rook.has_moved:
-            if isinstance(board.get_tile_at_pos(5, y).state, Empty) and \
-               isinstance(board.get_tile_at_pos(6, y).state, Empty):
+            tile_5 = board.get_tile_at_pos(5, y)
+            tile_6 = board.get_tile_at_pos(6, y)
+            
+            if isinstance(tile_5.state, Empty) and not tile_5.state.attacked_by['direct'] and \
+               isinstance(tile_6.state, Empty) and not tile_6.state.attacked_by['direct'] :
                self.valid_moves.append((6, y))
                self.castling_loc.append((6, y))
                 
@@ -499,9 +501,11 @@ class King(Piece):
         rook = board.get_piece(rook_tile)
             
         if self.castling[1] and not rook.has_moved:
+            tile_2 = board.get_tile_at_pos(2, y)
+            tile_3 = board.get_tile_at_pos(3, y)
             if isinstance(board.get_tile_at_pos(1, y).state, Empty) and \
-                isinstance(board.get_tile_at_pos(2, y).state, Empty) and \
-                isinstance(board.get_tile_at_pos(3, y).state, Empty):
+                isinstance(tile_2.state, Empty) and not tile_2.state.attacked_by['direct'] and \
+                isinstance(tile_3.state, Empty) and not tile_3.state.attacked_by['direct']:
                 self.valid_moves.append((2, y))
                 self.castling_loc.append((2, y))
 

@@ -46,7 +46,7 @@ class Game:
         
         # draw code
         if self.chess.status != 'game': self.view.draw_screens(self.chess.status)
-        else: self.view.draw_position(self.board, self.chess.moves, self.chess.is_dragged)
+        else: self.view.draw_position(self.board, self.chess.is_dragged)
         
         # update / flip screen.
         pygame.display.flip()

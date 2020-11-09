@@ -23,12 +23,15 @@ class Board:
         self.square_height = square_height
         
         self.id = 0
+        self.moves = []
         self.position = []
+        self.previous_move = []
         self.captured_pieces = []
         self.highlighted_tiles = []
         self.arrow_coordinates = []
-        self.pieces = {'w': [], 'b': []}
+        self.pieces = {'w': set(), 'b': set()}
         self.king_position = {'w': (), 'b': ()}
+        self.current_color = 'w'
         self.is_flipped = is_flipped
         
         self.setup()
@@ -63,11 +66,12 @@ class Board:
                         piece = Rook(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'P':
                         piece = Pawn(self.id, symbol, color, x, y, self.square_width, self.square_height)
+                        piece.promotion_target = 7 if self.is_flipped else 0
                     else:
                         raise ValueError('Undefined piece type.')
                     
                     tile = Tile(x, tile_y, 1, piece)
-                    self.pieces[color].append(piece)
+                    self.pieces[color].add(piece)
                     
                 else:
                     state = Empty(x, y)
@@ -98,17 +102,155 @@ class Board:
                 return tile.state
             
     
-    def check_for_pin(self, color, moving_piece):
-        king_x, king_y = self.king_position[color]
+    def update_board(self, color, moving_piece, x1, tile_y1, x2, tile_y2):
+        self.current_color = color
+        self.moving = moving_piece
+        
+        if isinstance(self.moving, King): self.king_position[self.current_color] = (x2, tile_y2)
+        
+        en_passant, promotion, castling = self.special_moves(x2, tile_y2)
+
+        if en_passant: self.is_en_passant(x1, tile_y1, x2, tile_y2)
+        elif promotion: self.is_promotion(x1, tile_y1, x2, tile_y2)
+        elif castling: self.is_castle(x1, tile_y1, x2, tile_y2)
+        else: self.make_move(x1, tile_y1, x2, tile_y2)
+    
+    
+    def get_attackers(self):
+        """"""
+        enemy_color = 'w' if self.current_color == 'b' else 'w'
+        for piece in self.pieces[enemy_color]:
+            piece.moves(self)
+
+
+    def special_moves(self, tile_x, tile_y):
+        """[summary]
+
+        Args:
+            tile_x ([type]): [description]
+            tile_y ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """
+        
+        if isinstance(self.moving, Pawn) and (tile_x, tile_y) == self.moving.EPT: en_passant = True
+        else: en_passant = False
+        
+        if isinstance(self.moving, Pawn) and tile_y == self.moving.promotion_target: promotion = True
+        else: promotion = False
+        
+        if isinstance(self.moving, King) and (tile_x, tile_y) in self.moving.castling_loc: castling = True
+        else: castling = False
+        
+        return en_passant, promotion, castling
+    
+    
+    def is_en_passant(self, x1, tile_y1, x2, tile_y2):
+        self.make_move(x1, tile_y1, x2, tile_y2)
+        
+        # Capture other pawn
+        tile_ept_y = tile_y2 - 1 if self.is_flipped and self.current_color == 'w' else tile_y2 + 1
+        tile_ept_y = tile_y2 + 1 if not self.is_flipped and self.current_color == 'w' else tile_y2 - 1
+        piece_ept_y = self.tile_coord_to_piece(tile_ept_y)
+        en_passant_target = self.get_tile_at_pos(x2, tile_ept_y)
+        if not isinstance(en_passant_target.state, Empty): self.remove_piece(en_passant_target.state)
+        en_passant_target.state = Empty(x2, piece_ept_y)
+
+
+    def is_promotion(self, x1, tile_y1, x2, tile_y2):
+        self.make_move(x1, tile_y1, x2, tile_y2)
+        
+        # Create different tile state
+        piece_y2 = self.tile_coord_to_piece(tile_y2)
+        next_tile = self.get_tile_at_pos(x2, tile_y2)
+        
+        # Auto promote to queen
+        piece_type = Queen
+        promotion_piece = piece_type(self.id + 1, 'Q', self.moving.color, x2, piece_y2, self.square_width, self.square_height)
+        promotion_piece.set_piece_value(promotion_piece.value_table)
+        
+        self.pieces[self.current_color].discard(self.moving)
+        self.pieces[self.current_color].add(promotion_piece)
+        next_tile.state = promotion_piece
+
+
+    def is_castle(self, x1, tile_y1, x2, tile_y2):
+        self.make_move(x1, tile_y1, x2, tile_y2)
+        
+        # Move the rook
+        piece_y2 = self.tile_coord_to_piece(tile_y2)
+        
+        if x2 == 2: 
+            rook_tile = self.get_tile_at_pos(0, tile_y2)
+            new_tile = self.get_tile_at_pos(3, tile_y2)
+        else: 
+            rook_tile = self.get_tile_at_pos(7, tile_y2)
+            new_tile = self.get_tile_at_pos(5, tile_y2)
+        
+        rook = self.get_piece(rook_tile)
+        rook.x = new_tile.x
+        rook.y = piece_y2
+        rook.set_piece_value(rook.value_table)
+        
+        new_tile.state = rook
+        rook_tile.state = Empty(x2, piece_y2)
+
+
+    def make_move(self, x1, tile_y1, x2, tile_y2):
+        """Make the move and update board variables
+
+        Args:
+            x2 (int): [description]
+            tile_y2 (int): [description]
+        """
+        piece_y1 = self.tile_coord_to_piece(tile_y1)
+        piece_y2 = self.tile_coord_to_piece(tile_y2)
+        
+        self.moving.make_move(x2, piece_y2)
+        self.moving.set_piece_value(self.moving.value_table)
+        
+        previous_tile = self.get_tile_at_pos(x1, tile_y1)
+        previous_tile.state = Empty(x1, piece_y1)
+        
+        next_tile = self.get_tile_at_pos(x2, tile_y2)
+        if not isinstance(next_tile.state, Empty): self.remove_piece(next_tile.state)
+        next_tile.state = self.moving
+
+        self.previous_move = [(x1, tile_y1), (x2, tile_y2)]
+        
+    
+    def remove_piece(self, piece):
+        color = 'w' if self.current_color == 'b' else 'w'
+        self.pieces[color].discard(piece)
+
+
+    def check_move(self, moving_piece):
+        """Check if move is valid"""
+        self.moving = moving_piece
+        self.check_for_pin()
+
+        if not self.moving.is_pinned: 
+            self.moves = self.moving.moves(self)
+            return True
+        return False
+        
+    
+    def check_for_pin(self):
+        king_x, king_y = self.king_position[self.current_color]
         king_tile = self.get_tile_at_pos(king_x, king_y)
         king = self.get_piece(king_tile)
         
         if len(king.attacked_by['indirect']) > 0:
             king_attackers = king.attacked_by['indirect']
-            if len(moving_piece.is_attacked_by['direct']) > 0:
-                for attacker in moving_piece.is_attacked_by['direct']:
+            if len(self.moving.attacked_by['direct']) > 0:
+                for attacker in self.moving.attacked_by['direct']:
                     if attacker in king_attackers:
-                        moving_piece.is_pinned = True
+                        self.moving.is_pinned = True
                         return
-        else: moving_piece.is_pinned = False
-            
+        
+        self.moving.is_pinned = False
+    
+    
+    def tile_coord_to_piece(self, y):
+        return y if self.is_flipped else (7 - y)

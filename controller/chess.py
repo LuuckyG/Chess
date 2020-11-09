@@ -1,6 +1,6 @@
 from view.view import GameView
 from model.board import Board
-from model.pieces import Empty, Pawn, King
+from model.pieces import Empty, Pawn, King, Queen
 
 
 class Chess:
@@ -42,7 +42,6 @@ class Chess:
 
         # Move and player variables
         self.move_nr = 0
-        self.previous_move = []
         self.player_list = []
         self.current_player = 0
         self.current_color = 'wb'[self.current_player]
@@ -160,23 +159,22 @@ class Chess:
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
 
         if is_up and self.is_clicked:
-            valid_move = self.check_move()
-
+            self.board.get_attackers()
+            valid_move = self.board.check_move(self.is_clicked)
+            
             # Check possible moves, and if possible
             # make the move.
             if valid_move and (tile_x, tile_y) != self.left_click_coordinates:
-                if (tile_x, tile_y) in self.moves:
+                if (tile_x, tile_y) in self.board.moves:
+                    self.board.update_board(color=self.current_color, 
+                                            moving_piece=self.is_clicked, 
+                                            x1=self.left_click_coordinates[0], 
+                                            tile_y1=self.left_click_coordinates[1], 
+                                            x2=tile_x, 
+                                            tile_y2=tile_y)
+                    self.next_turn()
                     
-                    if isinstance(self.is_clicked, King): self.board.king_position[self.current_color] = (tile_x, tile_y)
-                    en_passant, promotion, castling = self.special_moves(tile_x, tile_y)
-
-                    self.make_move(self.is_clicked, 
-                                   self.left_click_coordinates[0], self.left_click_coordinates[1],
-                                   tile_x, tile_y, 
-                                   en_passant,
-                                   promotion,
-                                   castling)
-                self.moves = []
+                self.board.moves = []
                 self.is_clicked = None
                 self.is_dragged = None
                 
@@ -250,8 +248,7 @@ class Chess:
         pass
 
     
-    def update(self):
-        
+    def update(self, tile_x, tile_y):
         
         
         # if self.play: self.check_for_resign()
@@ -262,201 +259,16 @@ class Chess:
 
         pass
 
-
-    def check_move(self):
-        """Check if move is valid"""
-        self.board.check_for_pin(self.current_color, self.is_clicked)
-
-        if not self.is_clicked.is_pinned: 
-            self.moves = self.is_clicked.moves(self.board, self.previous_move)
-            return True
-
-
-    def special_moves(self, tile_x, tile_y):
-        """[summary]
-
-        Args:
-            tile_x ([type]): [description]
-            tile_y ([type]): [description]
-
-        Returns:
-            [type]: [description]
-        """
-        
-        if isinstance(self.is_clicked, Pawn) and (tile_x, tile_y) == self.is_clicked.EPT: en_passant = True
-        else: en_passant = False
-        
-        # if isinstance(self.is_clicked, Pawn) and tile_y == self.promotion_target: promotion = True
-        # else: promotion = False
-        
-        if isinstance(self.is_clicked, King) and (tile_x, tile_y) in self.is_clicked.castling_loc: castling = True
-        else: castling = False
-        
-        return en_passant, False, castling
-    
-
-    def make_move(self, moving_piece, x1, tile_y1, x2, tile_y2, en_passant, promotion, castling):
-        """Make the move and update board variables
-
-        Args:
-            moving_piece (Piece): [description]
-            x1 (int): [description]
-            tile_y1 (int): [description]
-            x2 (int): [description]
-            tile_y2 (int): [description]
-            en_passant (bool): [description]
-            promotion (bool): [description]
-            castling (bool): [description]
-        """
-
-        piece_y1 = self.tile_coord_to_piece(tile_y1)
-        piece_y2 = self.tile_coord_to_piece(tile_y2)
-        moving_piece.make_move(x2, piece_y2)
-        
-        previous_tile = self.board.get_tile_at_pos(x1, tile_y1)
-        previous_tile.state = Empty(x1, piece_y1)
-        
-        next_tile = self.board.get_tile_at_pos(x2, tile_y2)
-        next_tile.state = moving_piece
-        
-        if en_passant: 
-            # Capture other pawn
-            tile_ept_y = tile_y2 - 1 if self.is_flipped and self.current_color == 'w' else tile_y2 + 1
-            tile_ept_y = tile_y2 + 1 if not self.is_flipped and self.current_color == 'w' else tile_y2 - 1
-            piece_ept_y = self.tile_coord_to_piece(tile_ept_y)
-            en_passant_target = self.board.get_tile_at_pos(x2, tile_ept_y)
-            en_passant_target.state = Empty(x2, piece_ept_y)
-        
-        if promotion:
-            # Create different tile state
-            pass
-        
-        if castling:
-            # Move the rook
-            if x2 == 2: 
-                rook_tile = self.board.get_tile_at_pos(0, tile_y2)
-                new_tile = self.board.get_tile_at_pos(3, tile_y2)
-            else: 
-                rook_tile = self.board.get_tile_at_pos(7, tile_y2)
-                new_tile = self.board.get_tile_at_pos(5, tile_y2)
-            
-            rook = self.board.get_piece(rook_tile)
-            rook.x = new_tile.x
-            rook.y = piece_y2
-            
-            new_tile.state = rook
-            rook_tile.state = Empty(x2, piece_y2)
-            
-            
-        
-        self.previous_move = [(x1, tile_y1), (x2, tile_y2)]
-        
-        self.next_turn()
-        
         
     def next_turn(self):
         """Update game state variables"""
         self.current_player = 0 if self.current_player == 1 else 1
         self.current_color = 'wb'[self.current_player]
+        self.board.current_color = self.current_color
         
         # Only update move nr is white is back in turn
         if self.current_player == 'w': self.move_nr += 1
         if self.settings['flip']: self.is_flipped = not self.is_flipped
-        
-        
-    # def make_move(self, x, y, x2, y2):
-    #     """Make valid move"""
-    #     player = self.position.player
-    #     color = 'wb'[player]
-    #     # enemy_color = opposite(color)
-    #     HMC = self.position.HMC
-
-    #     king_position = self.position.get_piece_position('K' + color)
-    #     king = self.position.get_piece(king_position)
-        
-    #     if king.is_checkmate() or king.is_stalemate() or self.position.resignation(color):
-    #         # return play = False
-    #         pass
-    #     elif king.is_check():
-    #         pass
-    #     elif king.is_pinned():
-    #         # Find pinned piece and remove moves from possible moves
-    #         pass
-    #     else:
-    #         # Player can move everywhere, except the king into attacked squares
-
-    #         # reset attacked squares
-    #         self.position.reset_attacking_squares()
-
-        # # Check if player is not in check
-        # king_position = get_piece_position(self.position, 'K' + color)  # Find position of the king of player
-        # attacked_squares = is_attacked_by(self.position,
-        #                                 king_position[0], king_position[1],
-        #                                 enemy_color)  # Check if king is attacked by enemy
-
-        # # Get all valid moves of selected piece of current player
-        # valid_moves, self.position = valid_piece_move(self.position, x, y, color)
-
-        # # Remove moves that lead to player getting into check
-        # # for pieces in attacked_squares:
-        # #     if pieces in valid_moves or pieces == (x, y):
-        # #         in_check = True
-
-        # if (x2, y2) in valid_moves and not in_check:
-        #     board = self.position.get_board()
-        #     castle_right = self.position.get_castle_rights()
-
-        #     # Check additional move options
-        #     if board[y][x][0] == 'P':
-        #         self.position = en_passant_rights(self.position, x2, y2)
-        #         self.position.set_HMC(0)  # Reset 50 move rule
-        #         if is_promotion(self.position, y2):
-        #             board[y][x] = 'Q' + 'wb'[player]  # Automatic promotion to queen
-        #             self.position.set_board(board)
-        #     elif board[y][x][0] == 'K':
-        #         self.position = castle_rights(self.position, x2, y2)
-        #     elif board[y][x][0] == 'R':
-        #         if x == 0 and (y == 0 or y == 7) and castle_right[player][0]:
-        #             castle_right[player][0] = False
-        #         elif x == 7 and (y == 0 or y == 7) and castle_right[player][1]:
-        #             castle_right[player][1] = False
-        #         self.position.set_castle_rights(castle_right)
-        #     elif is_captured(board, x2, y2):
-        #         self.position.set_HMC(0)  # Reset 50 move rule
-        #     else:
-        #         HMC += 1
-        #         self.position.set_HMC(HMC)
-
-        #     # Make the move
-        #     board[y2][x2] = board[y][x]
-        #     board[y][x] = 0
-
-        #     # Update position
-        #     self.update(self.position, board, player, (x, y), (x2, y2), castle_right)
-
-        #     # Check if 3-move repetition is of power
-        #     for value in self.position.history.values():
-        #         if value == 3:
-        #             self.position.set_play(False)
-            
-        #     # Check for checkmate or stalemate
-        #     self.check_end_game()
-
-        # return self.position
-
-
-    def check_for_check(self):
-        king_x, king_y = self.board.king_position[self.current_color]
-        king_tile = self.get_tile_at_pos(king_x, king_y)
-        king = self.get_piece(king_tile)
-        return king.in_check()
-
-    def check_end_game(self):
-        """Check if move causes game to end with checkmate or stalemate"""
-        # player_moves = all_possible_moves(position, enemy_color)
-        # position = is_checkmate(position, enemy_color)
-        # position = is_stalemate(position, enemy_color)
-        return False
 
 
     def new_game(self, x, y):
@@ -471,7 +283,3 @@ class Chess:
     def pixel_coord_to_tile(self, pixel_x, pixel_y):
         """Get board coordinates from pixel board coordinates"""
         return pixel_x // self.view.square_width, pixel_y // self.view.square_height
-    
-    
-    def tile_coord_to_piece(self, y):
-        return y if self.board.is_flipped else (7 - y)

@@ -87,12 +87,12 @@ class GameView:
         pass
 
 
-    def draw_position(self, board, moves, dragged_piece):
+    def draw_position(self, board, dragged_piece):
         self.screen.blit(self.background, (0, 0))
         self.draw_captured_pieces(board)
         self.draw_highlighed_tiles(board)
         self.draw_arrows(board)
-        self.draw_possible_moves(moves)
+        self.draw_possible_moves(board)
         self.draw_all_pieces(board, dragged_piece)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)
         
@@ -114,8 +114,8 @@ class GameView:
                             (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
 
 
-    def draw_possible_moves(self, moves):
-        for x, y in moves:
+    def draw_possible_moves(self, board):
+        for x, y in board.moves:
             self.screen.blit(self.images['circle_image_green'], (x * self.square_width, y * self.square_height))
     
     
@@ -451,5 +451,3 @@ class GameView:
                                  self.ai_level_1_button, self.ai_level_2_button, self.ai_level_3_button,
                                  self.back_button,
                                  self.play_again_button, self.nomore_game_button))
-    
-
