@@ -91,18 +91,24 @@ class GameView:
         self.screen.blit(self.background, (0, 0))
         self.draw_captured_pieces(board)
         self.draw_highlighed_tiles(board)
+        if board.previous_move: self.draw_previous_move(board)
         self.draw_arrows(board)
         self.draw_possible_moves(board)
         self.draw_all_pieces(board, dragged_piece)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)
         
-        
-        
+
     def draw_highlighed_tiles(self, board):
         for x, y in board.highlighted_tiles:
             pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
-                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)    
+                            (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
     
+    
+    def draw_previous_move(self, board):
+        (x1, y1), (x2, y2) = board.previous_move
+        self.screen.blit(self.images['yellow_box'], (x1 * self.square_width, y1 * self.square_height))
+        self.screen.blit(self.images['yellow_box'], (x2 * self.square_width, y2 * self.square_height))
+            
     
     def draw_arrows(self, board):
         ##### FOR NOW: DRAW 2 TILES AT BEGIN AND END POSITION ######
@@ -137,7 +143,7 @@ class GameView:
 
 
     def draw_captured_pieces(self, board):
-        self.screen.fill(self.BLACK, (self.screen_size, 0, 320, self.screen_size))
+        self.screen.fill(self.LIGHT_GRAY, (self.screen_size, 0, 320, self.screen_size))
 
     
     # def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):
