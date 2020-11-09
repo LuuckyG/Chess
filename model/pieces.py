@@ -8,6 +8,9 @@ class Empty:
         self.y = y
         self.attacked_by = {'direct': set(), 'indirect': set()}
         self.coordinate = self.LETTERS[self.x] + str(self.y + 1)
+    
+    def reset(self):
+        self.attacked_by = {'direct': set(), 'indirect': set()}
         
 
 class Piece:
@@ -33,6 +36,7 @@ class Piece:
 
         self.attacks = {'direct': set(), 'indirect': set()}
         self.attacked_by = {'direct': set(), 'indirect': set()}
+        self.defended_by = set()
 
         self.direction = [-1, 1]
         self.set_coordinate()
@@ -70,22 +74,25 @@ class Piece:
         
         if tile is not None:
             if not isinstance(tile.state, Empty):
-                if tile.state.color != self.color and not self.is_blocked:
-                    tile.state.attacked_by[attack_type].add(self)
-                    self.attacks[attack_type].add(tile.state)
+                piece = board.get_piece(tile)
+                if piece.color != self.color and not self.is_blocked:
+                    piece.attacked_by[attack_type].add(self)
+                    self.attacks[attack_type].add(piece)
                     
-                    if direct_attack:
-                        self.valid_moves.append((tile.x, tile.y))
+                    if direct_attack and not isinstance(piece, King):
+                        self.valid_moves.add((tile.x, tile.y))
                         
                 else:
+                    piece.defended_by.add(self)
                     self.is_blocked = True
                     
                 return False
             else:
                 tile.state.attacked_by[attack_type].add(self)
                 
-                if direct_attack and not isinstance(tile, King):
-                    self.valid_moves.append((tile.x, tile.y))
+                # Can't capture king
+                if direct_attack and not isinstance(tile.state, King):
+                    self.valid_moves.add((tile.x, tile.y))
         
         return direct_attack
     
@@ -184,6 +191,13 @@ class Piece:
             self.y = y
             self.has_moved = True
             self.set_piece_value(self.value_table)
+            self.set_coordinate()
+    
+    
+    def reset(self):
+        self.attacks = {'direct': set(), 'indirect': set()}
+        self.attacked_by = {'direct': set(), 'indirect': set()}
+        self.defended_by = set()
         
 
 class Pawn(Piece):
@@ -215,7 +229,7 @@ class Pawn(Piece):
 
     def moves(self, board):
         self.is_blocked = False
-        self.valid_moves = []
+        self.valid_moves = set()
         self.walk_direction = 1
         if not board.is_flipped and self.color == 'w': self.walk_direction = -1
         if board.is_flipped and self.color == 'b': self.walk_direction = -1
@@ -234,13 +248,13 @@ class Pawn(Piece):
         tile_y = self.y if board.is_flipped else 7 - self.y
         if self.x != 0:
             tile = board.get_tile_at_pos(self.x - 1, tile_y + self.walk_direction)
-            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
-                self.valid_moves.append((self.x - 1, tile_y + self.walk_direction)) 
+            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color and not isinstance(tile.state, King):
+                self.valid_moves.add((self.x - 1, tile_y + self.walk_direction)) 
                      
         if self.x != 7:
             tile = board.get_tile_at_pos(self.x + 1, tile_y + self.walk_direction)  
-            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color:
-                self.valid_moves.append((self.x + 1, tile_y + self.walk_direction)) 
+            if not isinstance(tile.state, Empty) and tile.state.color == self.enemy_color and not isinstance(tile.state, King):
+                self.valid_moves.add((self.x + 1, tile_y + self.walk_direction)) 
     
     
     def en_passant(self, board):
@@ -256,14 +270,14 @@ class Pawn(Piece):
                 tile = board.get_tile_at_pos(self.x - 1, tile_y)
                 if board.previous_move == [(self.x - 1, tile_y + w), (self.x - 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
-                        self.valid_moves.append((self.x - 1, tile_y + self.walk_direction))
+                        self.valid_moves.add((self.x - 1, tile_y + self.walk_direction))
                         self.EPT = (self.x - 1, tile_y + self.walk_direction)
             
             if self.x != 7:
                 tile = board.get_tile_at_pos(self.x + 1, tile_y)
                 if board.previous_move == [(self.x + 1, tile_y + w), (self.x + 1, tile_y)] \
                     and isinstance(tile.state, Pawn):
-                        self.valid_moves.append((self.x + 1, tile_y + self.walk_direction))
+                        self.valid_moves.add((self.x + 1, tile_y + self.walk_direction))
                         self.EPT = (self.x + 1, tile_y + self.walk_direction)
                        
     
@@ -297,7 +311,7 @@ class Knight(Piece):
     def moves(self, board):
         """A knight can either move +2/-2 in x direction and +1/-1 in y direction, or the other way around"""
 
-        self.valid_moves = []
+        self.valid_moves = set()
         
         for dx in self.direction:
             # Possible squares that are +1/-1 in x, +2/-2 in y away from original square
@@ -311,10 +325,10 @@ class Knight(Piece):
                         tile_y = y_possible if board.is_flipped else 7 - y_possible
                         tile = board.get_tile_at_pos(x_possible, tile_y)
                         if isinstance(tile.state, Empty):
-                            self.valid_moves.append((x_possible, tile_y))
+                            self.valid_moves.add((x_possible, tile_y))
                         else: 
-                            if tile.state.color == self.enemy_color:
-                                self.valid_moves.append((x_possible, tile_y))
+                            if tile.state.color == self.enemy_color and not isinstance(tile.state, King):
+                                self.valid_moves.add((x_possible, tile_y))
 
         for dy in self.direction:
             # Possible squares that are +2/-2 in x, +1/-1 in y away from original square
@@ -328,10 +342,10 @@ class Knight(Piece):
                         tile_y = y_possible if board.is_flipped else 7 - y_possible
                         tile = board.get_tile_at_pos(x_possible, tile_y)
                         if isinstance(tile.state, Empty):
-                            self.valid_moves.append((x_possible, tile_y))
+                            self.valid_moves.add((x_possible, tile_y))
                         else: 
-                            if tile.state.color == self.enemy_color:
-                                self.valid_moves.append((x_possible, tile_y))
+                            if tile.state.color == self.enemy_color and not isinstance(tile.state, King):
+                                self.valid_moves.add((x_possible, tile_y))
         
         return self.valid_moves
 
@@ -360,7 +374,7 @@ class Bishop(Piece):
     
 
     def moves(self, board):
-        self.valid_moves = []
+        self.valid_moves = set()
         self.diagonal_moves(board=board, max_range=7)
         return self.valid_moves
 
@@ -389,7 +403,7 @@ class Rook(Piece):
 
 
     def moves(self, board):
-        self.valid_moves = []
+        self.valid_moves = set()
         self.horizontal_moves(board=board, max_range=7)
         self.vertical_moves(board=board, max_range=7)
         return self.valid_moves
@@ -419,7 +433,7 @@ class Queen(Piece):
 
 
     def moves(self, board):
-        self.valid_moves = []
+        self.valid_moves = set()
         self.horizontal_moves(board=board, max_range=7)
         self.vertical_moves(board=board, max_range=7)
         self.diagonal_moves(board=board, max_range=7)
@@ -433,6 +447,7 @@ class King(Piece):
         super().__init__(id, symbol, color, x, y, square_width, square_height)
         self.index = 0
         self.points = 9999
+        self.in_check = False
         self.castling = [True, True]
         self.set_value_table()
         self.set_subsection(self.index, square_width, square_height)
@@ -465,11 +480,49 @@ class King(Piece):
         """For the king, one need to checks the 8 surrounding squares, 
         for being in check, and castling options."""
         
-        self.valid_moves = []
-        self.horizontal_moves(board=board, max_range=1)
-        self.vertical_moves(board=board, max_range=1)
-        self.diagonal_moves(board=board, max_range=1)
-        self.castling_rights(board=board)
+        self.valid_moves = set()
+        attack_type = 'direct'
+        coordinates = [set(), 
+                       set()]
+        
+        tile_y = board.tile_coord_to_piece(self.y)
+        
+        coordinates[0].add(self.x)
+        coordinates[1].add(tile_y)
+        
+        if self.x > 0: coordinates[0].add(self.x - 1)
+        if self.x < 7: coordinates[0].add(self.x + 1)
+        if tile_y > 0: coordinates[1].add(tile_y - 1)
+        if tile_y < 7: coordinates[1].add(tile_y + 1)
+
+        for c_x in coordinates[0]:
+            for c_y in coordinates[1]:
+                if (c_x, c_y) == (self.x, tile_y): continue
+
+                tile = board.get_tile_at_pos(c_x, c_y)
+                
+                if tile is not None:
+                    if not isinstance(tile.state, Empty):
+                        piece = board.get_piece(tile)
+                        if piece.color != self.color:
+                            piece.attacked_by['direct'].add(self)
+                            self.attacks[attack_type].add(piece)
+                            
+                            if len(piece.defended_by) == 0: self.valid_moves.add((tile.x, tile.y))
+                        else: piece.defended_by.add(self)
+                    else:
+                        tile.state.attacked_by['direct'].add(self)
+                        
+                        if len(tile.state.attacked_by['direct']) == 0: 
+                            self.valid_moves.add((tile.x, tile.y))
+                        else:
+                            for attacker in tile.state.attacked_by['direct']:
+                                if attacker.color != self.color: break
+                                self.valid_moves.add((tile.x, tile.y))
+                            
+        self.is_check()
+        if not self.in_check: self.castling_rights(board=board)
+        
         return self.valid_moves
 
 
@@ -487,35 +540,69 @@ class King(Piece):
         rook_tile = board.get_tile_at_pos(7, y)
         rook = board.get_piece(rook_tile)
             
-        if self.castling[0] and not rook.has_moved:
+        if self.castling[0] and rook and not rook.has_moved:
             tile_5 = board.get_tile_at_pos(5, y)
             tile_6 = board.get_tile_at_pos(6, y)
-            
-            if isinstance(tile_5.state, Empty) and not tile_5.state.attacked_by['direct'] and \
-               isinstance(tile_6.state, Empty) and not tile_6.state.attacked_by['direct'] :
-               self.valid_moves.append((6, y))
-               self.castling_loc.append((6, y))
+
+            if isinstance(tile_5.state, Empty) and isinstance(tile_6.state, Empty):
+                attackers_5 = tile_5.state.attacked_by['direct']
+                attackers_6 = tile_6.state.attacked_by['direct']
+                
+                direct_attack = False
+
+                for attacker in attackers_5:
+                    if attacker.color != self.color:
+                        direct_attack = True
+                        break
+                
+                if not direct_attack:
+                    for attacker in attackers_6:
+                        if attacker.color != self.color:
+                            direct_attack = True
+                            break
+                
+                if not direct_attack:
+                    self.valid_moves.add((6, y))
+                    self.castling_loc.append((6, y))
                 
         # Queenside castle
         rook_tile = board.get_tile_at_pos(0, y)
         rook = board.get_piece(rook_tile)
             
-        if self.castling[1] and not rook.has_moved:
+        if self.castling[1] and rook and not rook.has_moved:
             tile_2 = board.get_tile_at_pos(2, y)
             tile_3 = board.get_tile_at_pos(3, y)
             if isinstance(board.get_tile_at_pos(1, y).state, Empty) and \
-                isinstance(tile_2.state, Empty) and not tile_2.state.attacked_by['direct'] and \
-                isinstance(tile_3.state, Empty) and not tile_3.state.attacked_by['direct']:
-                self.valid_moves.append((2, y))
-                self.castling_loc.append((2, y))
+                isinstance(tile_2.state, Empty) and \
+                isinstance(tile_3.state, Empty):
+                
+                attackers_2 = tile_2.state.attacked_by['direct']
+                attackers_3 = tile_3.state.attacked_by['direct']
+                
+                direct_attack = True
+                
+                for attacker in attackers_2:
+                    if attacker.color != self.color:
+                        direct_attack = False
+                        break
+                
+                if not direct_attack:
+                    for attacker in attackers_3:
+                        if attacker.color != self.color:
+                            direct_attack = False
+                            break
+                
+                if not direct_attack:
+                    self.valid_moves.add((2, y))
+                    self.castling_loc.append((2, y))
 
 
-    def in_check(self):
+    def is_check(self):
         return len(self.attacked_by['direct']) >= 1
 
 
     def is_checkmate(self):
-        if self.in_check():
+        if self.is_check():
             for square in self.valid_moves:
                 if not square.attacked_by['direct']:
                     return False
@@ -524,7 +611,7 @@ class King(Piece):
 
 
     def is_stalemate(self):
-        if not self.in_check():
+        if not self.is_check():
             for square in self.valid_moves:
                 if not square.attacked_by['direct']:
                     return False

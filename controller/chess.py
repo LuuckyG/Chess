@@ -1,6 +1,5 @@
 from view.view import GameView
 from model.board import Board
-from model.pieces import Empty, Pawn, King, Queen
 
 
 class Chess:
@@ -165,7 +164,7 @@ class Chess:
             # Check possible moves, and if possible
             # make the move.
             if valid_move and (tile_x, tile_y) != self.left_click_coordinates:
-                if (tile_x, tile_y) in self.board.moves:
+                if (tile_x, tile_y) in self.is_clicked.valid_moves:
                     self.board.update_board(color=self.current_color, 
                                             moving_piece=self.is_clicked, 
                                             x1=self.left_click_coordinates[0], 
@@ -248,8 +247,8 @@ class Chess:
         pass
 
     
-    def update(self, tile_x, tile_y):
-        
+    def update(self):
+        self.board.update_possible_moves()
         
         # if self.play: self.check_for_resign()
         # if self.play: self.check_for_draw()

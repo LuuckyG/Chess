@@ -84,15 +84,22 @@ class GameView:
     def follow_mouse(self, x, y):
         """Track mouse movement and if hovered over a button  tile, change the color
         of the button to indicate focus."""
-        pass
+        for button in self.all_buttons:
+            if button.is_hover(x, y):
+                button.color = self.YELLOW
+            else:
+                if button.selected:
+                    button.color = self.GREEN
+                else:
+                    button.color = self.LIGHT_GRAY
 
 
     def draw_position(self, board, dragged_piece):
         self.screen.blit(self.background, (0, 0))
         self.draw_captured_pieces(board)
         self.draw_highlighed_tiles(board)
-        if board.previous_move: self.draw_previous_move(board)
         self.draw_arrows(board)
+        if board.previous_move: self.draw_previous_move(board)
         self.draw_possible_moves(board)
         self.draw_all_pieces(board, dragged_piece)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)

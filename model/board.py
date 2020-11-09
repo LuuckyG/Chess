@@ -1,4 +1,4 @@
-import copy
+import random
 
 from model.tile import Tile
 from model.pieces import Pawn, Knight, Bishop, Rook, Queen, King, Empty
@@ -66,7 +66,8 @@ class Board:
                         piece = Rook(self.id, symbol, color, x, y, self.square_width, self.square_height)
                     elif symbol == 'P':
                         piece = Pawn(self.id, symbol, color, x, y, self.square_width, self.square_height)
-                        piece.promotion_target = 7 if self.is_flipped else 0
+                        if color == 'w': piece.promotion_target = 7 if self.is_flipped else 0
+                        if color == 'b': piece.promotion_target = 0 if self.is_flipped else 7
                     else:
                         raise ValueError('Undefined piece type.')
                     
@@ -165,8 +166,8 @@ class Board:
         piece_y2 = self.tile_coord_to_piece(tile_y2)
         next_tile = self.get_tile_at_pos(x2, tile_y2)
         
-        # Auto promote to queen
-        piece_type = Queen
+        # Random promotion
+        piece_type = random.choice([Queen, Rook, Bishop, Knight])
         promotion_piece = piece_type(self.id + 1, 'Q', self.moving.color, x2, piece_y2, self.square_width, self.square_height)
         promotion_piece.set_piece_value(promotion_piece.value_table)
         
@@ -176,18 +177,23 @@ class Board:
 
 
     def is_castle(self, x1, tile_y1, x2, tile_y2):
-        self.make_move(x1, tile_y1, x2, tile_y2)
+        """First move the king following normal rules, then move the rook"""
         
-        # Move the rook
+        # Move the king
+        self.make_move(x1, tile_y1, x2, tile_y2)
         piece_y2 = self.tile_coord_to_piece(tile_y2)
         
+        # Queenside castle
         if x2 == 2: 
             rook_tile = self.get_tile_at_pos(0, tile_y2)
             new_tile = self.get_tile_at_pos(3, tile_y2)
+        
+        # Kingside castle
         else: 
             rook_tile = self.get_tile_at_pos(7, tile_y2)
             new_tile = self.get_tile_at_pos(5, tile_y2)
         
+        # Move the rook
         rook = self.get_piece(rook_tile)
         rook.x = new_tile.x
         rook.y = piece_y2
@@ -251,6 +257,18 @@ class Board:
         
         self.moving.is_pinned = False
     
+    
+    def update_possible_moves(self):
+        """Check possible moves after last move"""
+        
+        for rows in self.position:
+            for tile in rows:
+                tile.state.reset()
+                
+                if not isinstance(tile.state, Empty):
+                    piece = self.get_piece(tile)
+                    piece.moves(self)
+            
     
     def tile_coord_to_piece(self, y):
         return y if self.is_flipped else (7 - y)

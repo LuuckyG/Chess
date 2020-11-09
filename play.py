@@ -57,7 +57,7 @@ class Game:
         
         # if self.chess.player_list[self.chess.current_player] == 'AI': self.chess.ai_move()
         
-        # chess.update()
+        self.chess.update()
         pass
 
 
