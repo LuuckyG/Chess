@@ -24,6 +24,7 @@ class Board:
         
         self.id = 0
         self.moves = []
+        self.all_possible_moves = {'w': [], 'b': []}
         self.position = []
         self.previous_move = []
         self.captured_pieces = []
@@ -33,6 +34,10 @@ class Board:
         self.king_position = {'w': (), 'b': ()}
         self.current_color = 'w'
         self.is_flipped = is_flipped
+        
+        self.winner = None
+        self.stalemate = False
+        self.checkmate = False
         
         self.setup()
     
@@ -115,13 +120,6 @@ class Board:
         elif promotion: self.is_promotion(x1, tile_y1, x2, tile_y2)
         elif castling: self.is_castle(x1, tile_y1, x2, tile_y2)
         else: self.make_move(x1, tile_y1, x2, tile_y2)
-    
-    
-    def get_attackers(self):
-        """"""
-        enemy_color = 'w' if self.current_color == 'b' else 'w'
-        for piece in self.pieces[enemy_color]:
-            piece.moves(self)
 
 
     def special_moves(self, tile_x, tile_y):
@@ -230,32 +228,33 @@ class Board:
         color = 'w' if self.current_color == 'b' else 'w'
         self.pieces[color].discard(piece)
 
-
-    def check_move(self, moving_piece):
-        """Check if move is valid"""
-        self.moving = moving_piece
-        self.check_for_pin()
-
-        if not self.moving.is_pinned: 
-            self.moves = self.moving.moves(self)
-            return True
-        return False
-        
     
-    def check_for_pin(self):
-        king_x, king_y = self.king_position[self.current_color]
-        king_tile = self.get_tile_at_pos(king_x, king_y)
-        king = self.get_piece(king_tile)
-        
-        if len(king.attacked_by['indirect']) > 0:
-            king_attackers = king.attacked_by['indirect']
-            if len(self.moving.attacked_by['direct']) > 0:
-                for attacker in self.moving.attacked_by['direct']:
-                    if attacker in king_attackers:
-                        self.moving.is_pinned = True
+    def check_for_block_or_pin(self, king, piece):
+        """Check if piece is pinned and can block or capture attacker
+
+        Args:
+            king ():
+            piece ([type]): [description]
+
+        Returns:
+            Piece: the piece that pins the current piece
+        """
+       
+        if len(king.attacked_by['indirect'].keys()) > 0:
+            king_attacker_ids = king.attacked_by['indirect'].keys()
+            if len(piece.attacked_by['direct'].keys()) > 0:
+                for attacker_id in piece.attacked_by['direct'].keys():
+                    if attacker_id in king_attacker_ids:
+                        loc = piece.can_block_or_capture(piece.attacked_by['direct'][attacker_id])
+                        if loc is not None:
+                            piece.can_move = True
+                            piece.valid_moves = [(loc[0], loc[1])]
+                        else:
+                            piece.can_move = False
+                            piece.valid_moves = []
                         return
-        
-        self.moving.is_pinned = False
+       
+        piece.can_move = True
     
     
     def update_possible_moves(self):
@@ -268,7 +267,25 @@ class Board:
                 if not isinstance(tile.state, Empty):
                     piece = self.get_piece(tile)
                     piece.moves(self)
+        
+        for color, (king_x, king_y) in self.king_position.items():
+            king = self.get_piece(self.get_tile_at_pos(king_x, king_y))
+            king.in_check = king.is_check()
+        
+            if king.in_check or king.attacked_by['indirect']:
+                for piece in self.pieces[color]:
+                    self.check_for_block_or_pin(king, piece)
+                    self.all_possible_moves[piece.color].extend(piece.valid_moves)
             
+            # Check for game winning states
+            if not king.in_check and self.all_possible_moves[color]: 
+                self.stalemate = True
+                self.winner = 'Draw'
+                
+            if king.in_check and self.all_possible_moves[color]: 
+                self.checkmate = True
+                self.winner = 'b' if color == 'w' else 'w'
+    
     
     def tile_coord_to_piece(self, y):
         return y if self.is_flipped else (7 - y)

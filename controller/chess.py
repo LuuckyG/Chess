@@ -158,13 +158,11 @@ class Chess:
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
 
         if is_up and self.is_clicked:
-            self.board.get_attackers()
-            valid_move = self.board.check_move(self.is_clicked)
-            
+
             # Check possible moves, and if possible
             # make the move.
-            if valid_move and (tile_x, tile_y) != self.left_click_coordinates:
-                if (tile_x, tile_y) in self.is_clicked.valid_moves:
+            if (tile_x, tile_y) != self.left_click_coordinates:
+                if not self.is_clicked.can_move and (tile_x, tile_y) in self.is_clicked.valid_moves:
                     self.board.update_board(color=self.current_color, 
                                             moving_piece=self.is_clicked, 
                                             x1=self.left_click_coordinates[0], 
@@ -199,11 +197,6 @@ class Chess:
         self.board.arrow_coordinates = []
 
 
-    def remove_arrow(self, arrow):
-        """An arrow is removed if it is drawn twice"""
-        return arrow in self.board.arrow_coordinates
-
-
     def process_right_click(self, mouse_x, mouse_y, is_up):
         """Get annotations drawn on the board using the right mouse button.
 
@@ -225,7 +218,7 @@ class Chess:
                 arrow = [(x1, y1), (x, y)]
 
                 # Check if user wants to remove arrow by drawing opposite arrow
-                if self.remove_arrow(arrow):
+                if arrow in self.board.arrow_coordinates:
                     index = self.board.arrow_coordinates.index(arrow)
                     self.board.arrow_coordinates.pop(index)
                 else: self.board.arrow_coordinates.append(arrow)                   
@@ -248,13 +241,21 @@ class Chess:
 
     
     def update(self):
+        # if self.play: board.check_for_resign()
+        # if self.play: board.check_for_draw()
+        # if self.play: is_check = board.check_for_check()
+        # if self.play: board.check_for_win(is_check)
+        
+        
         self.board.update_possible_moves()
         
-        # if self.play: self.check_for_resign()
-        # if self.play: self.check_for_draw()
-        # if self.play: is_check = self.check_for_check()
-        # if self.play: self.check_for_win(is_check)
-        # if self.play: self.check_move()
+        self.stalemate = self.board.stalemate
+        self.checkmate = self.board.checkmate
+        self.winner = self.board.winner
+        
+        if self.checkmate or self.stalemate: self.play = False
+        
+        # if self.play: board.check_move()
 
         pass
 
