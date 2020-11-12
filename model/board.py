@@ -8,23 +8,23 @@ class Board:
     """Class to store current position on the board and 
     to keep track of all the pieces on the board."""
 
-    # START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
-    #                  ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 3
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 4
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 5
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 6
-    #                  ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
-    #                  ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
-    
-    START_POSITION = [['Rw', 0, 0, 0, 'Kw', 0, 0, 'Rw'],  # 1
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 2
+    START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
+                     ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 3
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 4
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 5
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 6
-                     [0, 0, 0, 0, 0, 0, 0, 0],  # 7
-                     [0, 'Rb', 0, 0, 'Kb', 0, 0, 'Rb']]  # 8
+                     ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
+                     ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
+    
+    # START_POSITION = [[0, 0, 0, 0, 'Kw', 0, 0, 0],  # 1
+    #                  [0, 0, 0, 0, 0, 0, 'Rw', 0],  # 2
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 3
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 4
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 5
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 6
+    #                  [0, 'Rw', 0, 0, 0, 0, 0, 0],  # 7
+    #                  [0, 0, 0, 0, 0, 0, 0, 'Kb']]  # 8
 
 
     def __init__(self, square_width, square_height, is_flipped):
@@ -302,6 +302,8 @@ class Board:
         """Check possible moves after last move"""
         
         # Reset tiles
+        self.all_possible_moves = {'w': [], 'b': []}
+        
         for rows in self.position:
             for tile in rows:
                 tile.state.reset()
@@ -329,11 +331,9 @@ class Board:
                     if not isinstance(piece, King): 
                         self.all_possible_moves[piece.color].extend(piece.valid_moves)
             
-            print(color, ':', king.in_check, '|', not self.all_possible_moves[color])
-            
-            
             # Check for game winning states
-            if not king.in_check and not self.all_possible_moves[color]:
+            if not king.in_check and not self.all_possible_moves[color] \
+               and color == self.current_color:
                 print('stalemate')
                 self.stalemate = True
                 self.winner = 'Draw'

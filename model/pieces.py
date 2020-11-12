@@ -73,24 +73,30 @@ class Piece:
 
         attack_type = 'direct' if direct_attack else 'indirect'
         tile = board.get_tile_at_pos(x, y)
-        index = attack_line.index((tile.x, tile.y)) + 1
+        
+        try: index = attack_line.index([(self.x, begin_y), (tile.x, tile.y)]) + 1
+        except ValueError: index = len(attack_line) + 1
+        
         
         if not isinstance(tile.state, Empty):
-            piece = board.get_piece(tile)
-            if piece.color != self.color and not self.is_blocked:
-                piece.attacked_by[attack_type][str(self.id)] = attack_line[:index]
-                self.attacks[attack_type][str(piece.id)] = attack_line[:index]
-                
-                # Can't capture king
-                if direct_attack and not isinstance(piece, King):
-                    self.valid_moves.append([(self.x, begin_y), (tile.x, tile.y)])
-                    
+            # Pawn cannot occupy non-empty states
+            if isinstance(self, Pawn): self.is_blocked = True
             else:
-                piece.defended_by.add(self.id)
-                self.is_blocked = True
-                
-            return False
-        
+                piece = board.get_piece(tile)
+                if piece.color != self.color and not self.is_blocked:
+                    piece.attacked_by[attack_type][str(self.id)] = attack_line[:index]
+                    self.attacks[attack_type][str(piece.id)] = attack_line[:index]
+                    
+                    # Can't capture king
+                    if direct_attack and not isinstance(piece, King):
+                        self.valid_moves.append([(self.x, begin_y), (tile.x, tile.y)])
+                        
+                else:
+                    piece.defended_by.add(self.id)
+                    self.is_blocked = True
+                    
+                return False
+
         else:
             tile.state.attacked_by[attack_type][str(self.id)] = attack_line[:index]
             self.attacks[attack_type][str(tile.state.id)] = attack_line[:index]
@@ -222,7 +228,8 @@ class Piece:
 
     def add_attack(self, x, begin_y, y, tile, attack_line):
         """"""
-        index = attack_line.index((tile.x, tile.y)) + 1
+        try: index = attack_line.index([(self.x, begin_y), (x, y)]) + 1
+        except ValueError: index = len(attack_line) + 1
         self.valid_moves.append([(self.x, begin_y), (x, y)])
         tile.state.attacked_by['direct'][str(self.id)] = attack_line[:index]
         self.attacks['direct'][str(self.id)] = attack_line[:index]

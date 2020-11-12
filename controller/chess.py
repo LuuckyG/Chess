@@ -163,7 +163,7 @@ class Chess:
         if is_up and self.is_clicked:
             # Check possible moves, and if possible
             # make the move.
-
+            print(self.is_clicked.valid_moves)
             self.board.moves = self.is_clicked.valid_moves
                 
             if (tile_x, tile_y) != self.left_click:
