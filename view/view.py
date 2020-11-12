@@ -2,7 +2,7 @@ import os
 import pygame
 
 from view.button import Button
-from model.pieces import Empty
+from model.pieces import Empty, King
 from model.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
 
 
@@ -128,8 +128,10 @@ class GameView:
 
 
     def draw_possible_moves(self, board):
-        for x, y in board.moves:
-            self.screen.blit(self.images['circle_image_green'], (x * self.square_width, y * self.square_height))
+        for move in board.moves:
+            if len(move) > 1:
+                _, (x2, y2) = move
+                self.screen.blit(self.images['circle_image_green'], (x2 * self.square_width, y2 * self.square_height))
     
     
     def draw_all_pieces(self, board, dragged_piece):
@@ -138,6 +140,9 @@ class GameView:
             for tile in rows:
                 if not isinstance(tile.state, Empty):
                     piece = board.get_piece(tile)
+                    if isinstance(piece, King): 
+                        if piece.in_check: self.screen.blit(self.images['circle_image_red'], (tile.x * self.square_width, 
+                                                                                              tile.y * self.square_height), piece.subsection)
                     if dragged_piece is not None: 
                         if piece.id != dragged_piece.id: 
                             self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
@@ -151,51 +156,6 @@ class GameView:
 
     def draw_captured_pieces(self, board):
         self.screen.fill(self.LIGHT_GRAY, (self.screen_size, 0, 320, self.screen_size))
-
-    
-    # def draw_move(self, position, previous_move, right_clicked=[], is_clicked=False, drag_coord=None):
-    #     """Update chess board. Don't update moving piece, indicated by drag_coord"""
-    #     self.screen.blit(self.background, (0, 0))
-
-    #     # Show square
-    #     mouse_pos = pygame.mouse.get_pos()
-    #     mouse_chess_coord = pixel_coord_to_chess(mouse_pos, self.square_width, self.square_height)
-    #     pygame.draw.rect(self.screen, (225, 0, 0, 50),
-    #                     (mouse_chess_coord[0] * self.square_width, mouse_chess_coord[1] * self.square_height,
-    #                     self.square_width, self.square_height), 2)
-
-    #     if previous_move is not None:
-    #         for chess_pos in previous_move:
-    #             pos = chess_coord_to_pixels(chess_pos, self.square_width, self.square_height)
-    #             self.screen.blit(self.images['yellow_box'], pos)
-
-    #     if right_clicked:
-    #         for pos in right_clicked:
-    #             pygame.draw.rect(self.screen, (225, 0, 0, 50),
-    #                             (pos[0] * self.square_width, pos[1] * self.square_height,
-    #                             self.square_width, self.square_height))
-    #     elif is_clicked:
-    #         pass
-
-    #     # Blit over other pieces
-    #     order = [self.position.pieces["white"], self.position.pieces["black"]] if self.position.get_player() == 1 \
-    #         else [self.position.pieces["black"], self.position.pieces["white"]]
-
-    #     for piece_color in order:
-    #         for piece in piece_color:
-    #             pixel_coord = chess_coord_to_pixels(piece.chess_coord, self.square_width, self.square_height)
-                
-    #             # Don't blit moving piece
-    #             if piece.chess_coord != drag_coord:  
-    #                 if piece.pos == (-1, -1):
-    #                     # Default square
-    #                     self.screen.blit(self.pieces_image, pixel_coord, piece.subsection)
-    #                 else:
-    #                     # Specific pixels:
-    #                     self.screen.blit(self.pieces_image, pos, piece.subsection)
-        
-    #     self.draw_position()
-    #     self.draw_captured_pieces(position)
 
 
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):

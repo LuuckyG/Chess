@@ -58,7 +58,6 @@ class Game:
         # if self.chess.player_list[self.chess.current_player] == 'AI': self.chess.ai_move()
         
         self.chess.update()
-        pass
 
 
     def handle_events(self):

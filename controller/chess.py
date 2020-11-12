@@ -20,15 +20,11 @@ class Chess:
         self.is_down = False
         self.is_dragged = None
         self.is_clicked = None
-        self.left_click = False
-        self.right_click = False
+        self.left_click = None
+        self.right_click = None
 
         # Dragging pieces coordinates
         self.moves = []
-        self.left_click_coordinates = None
-
-        # Drawing arrows coordinates
-        self.right_click_coordinates = None
         
         # Win conditions
         self.winner = None
@@ -153,22 +149,31 @@ class Chess:
 
 
     def play_game(self, mouse_x, mouse_y, is_up):
-        """"""
+        """[summary]
+
+        Args:
+            mouse_x ([type]): [description]
+            mouse_y ([type]): [description]
+            is_up (bool): [description]
+        """
+        
         tile_x, tile_y = self.pixel_coord_to_tile(mouse_x, mouse_y)
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
 
         if is_up and self.is_clicked:
-
             # Check possible moves, and if possible
             # make the move.
-            if (tile_x, tile_y) != self.left_click_coordinates:
-                if not self.is_clicked.can_move and (tile_x, tile_y) in self.is_clicked.valid_moves:
-                    self.board.update_board(color=self.current_color, 
-                                            moving_piece=self.is_clicked, 
-                                            x1=self.left_click_coordinates[0], 
-                                            tile_y1=self.left_click_coordinates[1], 
-                                            x2=tile_x, 
-                                            tile_y2=tile_y)
+
+            self.board.moves = self.is_clicked.valid_moves
+                
+            if (tile_x, tile_y) != self.left_click:
+                
+                move = [self.left_click, (tile_x, tile_y)]
+                
+                if self.is_clicked.can_move and move in self.is_clicked.valid_moves:
+                    self.board.move_piece(color=self.current_color, 
+                                          moving_piece=self.is_clicked, 
+                                          move=move)
                     self.next_turn()
                     
                 self.board.moves = []
@@ -184,7 +189,7 @@ class Chess:
                 if piece and piece.color == self.current_color:
                     self.is_clicked = piece
                     self.is_dragged = piece
-                    self.left_click_coordinates = (tile_x, tile_y)
+                    self.left_click = (tile_x, tile_y)
                 
                 else: self.reset_highlights_and_arrows()
 
@@ -213,8 +218,8 @@ class Chess:
         if is_up:
             
             # Check for possible arrows
-            if (x, y) != self.right_click_coordinates:
-                x1, y1 = self.right_click_coordinates
+            if (x, y) != self.right_click:
+                x1, y1 = self.right_click
                 arrow = [(x1, y1), (x, y)]
 
                 # Check if user wants to remove arrow by drawing opposite arrow
@@ -232,7 +237,7 @@ class Chess:
                     self.board.highlighted_tiles.pop(index)
 
         # Mouse button is pressed
-        else: self.right_click_coordinates = (x, y)          
+        else: self.right_click = (x, y)          
 
 
     def ai_move(self):
@@ -241,25 +246,26 @@ class Chess:
 
     
     def update(self):
+        """"""
         # if self.play: board.check_for_resign()
         # if self.play: board.check_for_draw()
         # if self.play: is_check = board.check_for_check()
         # if self.play: board.check_for_win(is_check)
         
-        
         self.board.update_possible_moves()
-        
-        self.stalemate = self.board.stalemate
-        self.checkmate = self.board.checkmate
-        self.winner = self.board.winner
-        
-        if self.checkmate or self.stalemate: self.play = False
-        
-        # if self.play: board.check_move()
-
-        pass
+        self.update_end_conditions(self.board)
 
         
+    def update_end_conditions(self, board):
+        """"""
+        self.end_conditions['resignation'] = False
+        self.end_conditions['checkmate'] = board.checkmate
+        self.end_conditions['stalemate'] = board.stalemate
+        self.end_conditions['HMC'] = False
+        self.end_conditions['3_fold_rep'] = False
+        self.winner = board.winner
+        
+
     def next_turn(self):
         """Update game state variables"""
         self.current_player = 0 if self.current_player == 1 else 1
@@ -272,6 +278,7 @@ class Chess:
 
 
     def new_game(self, x, y):
+        """"""
         pass
 
 
