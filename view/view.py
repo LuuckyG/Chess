@@ -235,6 +235,10 @@ class GameView:
             y += font_height + line_spacing
             text = text[i:]
             
+        # Draw `draw` and `resign` buttons
+        self.draw_game_button.draw(self.screen, self.font)
+        self.resign_game_button.draw(self.screen, self.font)
+            
 
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):
         """Show message with info to the user at the bottom of the window, below the play board"""
@@ -473,6 +477,31 @@ class GameView:
         
         # ---------------------------------------------------------------------------------- #
 
+        #### Game ####
+        self.draw_game_button = Button(color=self.BLACK, 
+                                       x=self.screen_size + 20, 
+                                       y=600, 
+                                       width=150, 
+                                       height=30, 
+                                       value=False,
+                                       group='game', 
+                                       selected=False, 
+                                       text_color=self.WHITE, 
+                                       text='Draw')
+
+        self.resign_game_button = Button(color=self.RED, 
+                                         x=self.screen_size + 190, 
+                                         y=600, 
+                                         width=150, 
+                                         height=30, 
+                                         value=False,
+                                         group='game', 
+                                         selected=False, 
+                                         text_color=self.BLACK, 
+                                         text='Resign')        
+        
+        # ---------------------------------------------------------------------------------- #
+
         #### End Screen ####
         self.play_again_button = Button(color=self.GREEN, 
                                         x=0.25 * self.screen_size, 
@@ -501,4 +530,5 @@ class GameView:
                                  self.human_vs_human_button, self.human_vs_ai_button,
                                  self.ai_level_1_button, self.ai_level_2_button, self.ai_level_3_button,
                                  self.back_button,
+                                 self.draw_game_button, self.resign_game_button,
                                  self.play_again_button, self.nomore_game_button))
