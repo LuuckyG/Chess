@@ -12,6 +12,9 @@ class Chess:
         # Game state variables
         self.play = True
         self.status = 'game'
+        self.win_condition = None
+        
+        self.move = []
         
         # Board is flipped if white is shown on top of the board
         self.is_flipped = False
@@ -22,24 +25,6 @@ class Chess:
         self.is_clicked = None
         self.left_click = None
         self.right_click = None
-
-        # Dragging pieces coordinates
-        self.moves = []
-        
-        # Win conditions
-        self.winner = None
-        self.end_conditions = {'resignation': False,
-                               'checkmate': False, 
-                               'stalemate': False, 
-                               'HMC': False, 
-                               '3_fold_rep': False}
-        self.HMC = 0
-
-        # Move and player variables
-        self.move_nr = 0
-        self.player_list = []
-        self.current_player = 0
-        self.current_color = 'wb'[self.current_player]
         
         # Settings
         self.settings = {'flip': False, 
@@ -60,14 +45,10 @@ class Chess:
         - y: y-coordinate of mouse at click (in px)
         """
 
-        if self.status == 'start_screen':
-            self.start_screen(x, y)
-        elif self.status == 'settings':
-            self.update_settings(x, y)
-        elif self.status == 'game':
-            self.play_game(x, y, is_up)
-        elif self.status == 'replay':
-            self.new_game(x, y)
+        if self.status == 'start_screen': self.start_screen(x, y)
+        elif self.status == 'settings': self.update_settings(x, y)
+        elif self.status == 'game': self.play_game(x, y, is_up)
+        elif self.status == 'replay': self.new_game(x, y)
     
     
     def start_screen(self, x, y):
@@ -120,11 +101,11 @@ class Chess:
                 for related_button in self.view.all_buttons:
                     if related_button.group == button.group and related_button.selected:
                         self.view.update_button_look(related_button, False, 
-                                    self.view.LIGHT_GRAY, self.view.BLACK)
+                                                     self.view.LIGHT_GRAY, self.view.BLACK)
 
                 # Update view of clicked button
                 self.view.update_button_look(button, True, 
-                                    self.view.GREEN, self.view.WHITE)
+                                             self.view.GREEN, self.view.WHITE)
         
         # Check if user is satisfied with settings and wants to return to
         # start screen to start playing the game
@@ -136,18 +117,18 @@ class Chess:
         """The game is started with the selected settings.
         The default settings are: human vs. human."""
 
-        # Create players
-        self.player_list.append('Human')
-        
-        if self.settings['vs_computer']: self.player_list.append('AI')
-        else: self.player_list.append('Human')
-
         # Change starting screen to Chess board
         self.board = Board(square_width=self.view.square_width, 
                            square_height=self.view.square_height,
                            is_flipped=self.is_flipped)
 
-
+        # Create players
+        self.board.player_list.append('Human')
+        
+        if self.settings['vs_computer']: self.board.player_list.append('AI')
+        else: self.board.player_list.append('Human')
+        
+        
     def play_game(self, mouse_x, mouse_y, is_up):
         """[summary]
 
@@ -163,18 +144,22 @@ class Chess:
         if is_up and self.is_clicked:
             # Check possible moves, and if possible
             # make the move.
-            print(self.is_clicked.valid_moves)
             self.board.moves = self.is_clicked.valid_moves
                 
             if (tile_x, tile_y) != self.left_click:
+                self.move = [self.left_click, (tile_x, tile_y)]
                 
-                move = [self.left_click, (tile_x, tile_y)]
-                
-                if self.is_clicked.can_move and move in self.is_clicked.valid_moves:
-                    self.board.move_piece(color=self.current_color, 
+                if self.is_clicked.can_move and self.move in self.is_clicked.valid_moves:
+                    self.board.move_piece(color=self.board.current_color, 
                                           moving_piece=self.is_clicked, 
-                                          move=move)
-                    self.next_turn()
+                                          move=self.move)
+                    
+                    self.update()
+                    
+                    self.board.next_turn(self.is_clicked, self.move)
+                                        
+                    if self.settings['flip']: self.is_flipped = not self.is_flipped
+                    self.board.is_flipped = self.is_flipped
                     
                 self.board.moves = []
                 self.is_clicked = None
@@ -186,7 +171,7 @@ class Chess:
             if tile is not None and not (self.is_clicked and self.is_dragged):
                 piece = self.board.get_piece(tile)
 
-                if piece and piece.color == self.current_color:
+                if piece and piece.color == self.board.current_color:
                     self.is_clicked = piece
                     self.is_dragged = piece
                     self.left_click = (tile_x, tile_y)
@@ -196,8 +181,7 @@ class Chess:
 
     def reset_highlights_and_arrows(self):
         """Reset highlights and arrows from board"""
-        self.clicked = None
-        self.moves = []
+        self.board.moves = []
         self.board.highlighted_tiles = []
         self.board.arrow_coordinates = []
 
@@ -253,28 +237,13 @@ class Chess:
         # if self.play: board.check_for_win(is_check)
         
         self.board.update_possible_moves()
-        self.update_end_conditions(self.board)
+        self.check_for_game_end()
 
         
-    def update_end_conditions(self, board):
+    def check_for_game_end(self):
         """"""
-        self.end_conditions['resignation'] = False
-        self.end_conditions['checkmate'] = board.checkmate
-        self.end_conditions['stalemate'] = board.stalemate
-        self.end_conditions['HMC'] = False
-        self.end_conditions['3_fold_rep'] = False
-        self.winner = board.winner
-        
-
-    def next_turn(self):
-        """Update game state variables"""
-        self.current_player = 0 if self.current_player == 1 else 1
-        self.current_color = 'wb'[self.current_player]
-        self.board.current_color = self.current_color
-        
-        # Only update move nr is white is back in turn
-        if self.current_player == 'w': self.move_nr += 1
-        if self.settings['flip']: self.is_flipped = not self.is_flipped
+        for condition, state in self.board.end_conditions.items():
+            if state: self.win_condition = condition
 
 
     def new_game(self, x, y):

@@ -31,10 +31,10 @@ class Piece:
         self.y = y
         self.upper_y = 0 if self.color == 'w' else square_height
 
-        self.is_blocked = False
         self.can_move = True
         self.has_moved = False
-
+        self.is_blocked = False
+        
         self.valid_moves = []
         self.attacks = {'direct': dict(), 'indirect': dict()}
         self.attacked_by = {'direct': dict(), 'indirect': dict()}
@@ -227,7 +227,7 @@ class Piece:
 
 
     def add_attack(self, x, begin_y, y, tile, attack_line):
-        """"""
+        """Save how piece attacks square"""
         try: index = attack_line.index([(self.x, begin_y), (x, y)]) + 1
         except ValueError: index = len(attack_line) + 1
         self.valid_moves.append([(self.x, begin_y), (x, y)])
@@ -236,7 +236,7 @@ class Piece:
 
 
     def make_move(self, x, y):
-        """"""
+        """Update piece variables to new position on the board"""
         self.x = x
         self.y = y
         self.has_moved = True
@@ -245,17 +245,18 @@ class Piece:
     
     
     def can_block_or_capture(self, board, attack_line):
-        """"""
+        """If check, or pinned, the piece may be able to capture or block attacker"""
         moves = []
         y = board.tile_coord_to_piece(self.y)
-        for _, (x2, y2) in self.valid_moves:
-            if (x2, y2) in attack_line: moves.append([(self.x, y), (x2, y2)])
+        for x1, y1 in attack_line:
+            if [(self.x, y), (x1, y1)] in self.valid_moves: moves.append([(self.x, y), (x1, y1)])
         return moves
 
     
     def reset(self):
-        """"""
+        """Reset piece variables each turn"""
         self.can_move = True
+        self.is_blocked = False
         self.attacks = {'direct': dict(), 'indirect': dict()}
         self.attacked_by = {'direct': dict(), 'indirect': dict()}
         self.defended_by = set()
@@ -601,7 +602,7 @@ class King(Piece):
         if not self.in_check or self.has_moved: self.castling_rights(board)
                      
     
-    def normal_moves(self, board, check=False):
+    def normal_moves(self, board, check):
         """[summary]
 
         Args:
@@ -710,9 +711,9 @@ class King(Piece):
             tile_2 = board.get_tile_at_pos(2, y)
             tile_3 = board.get_tile_at_pos(3, y)
             
-            if  isinstance(tile_1.state, Empty) and \
-                isinstance(tile_2.state, Empty) and \
-                isinstance(tile_3.state, Empty):
+            if isinstance(tile_1.state, Empty) and \
+               isinstance(tile_2.state, Empty) and \
+               isinstance(tile_3.state, Empty):
                 
                 attackers_2 = tile_2.state.attacked_by['direct']
                 attackers_3 = tile_3.state.attacked_by['direct']
@@ -743,5 +744,7 @@ class King(Piece):
         
         if self.attacked_by['direct']:
             for enemy_piece in enemy_pieces:
-                if enemy_piece.id in self.attacked_by['direct'].keys(): return True
+                if enemy_piece.id in self.attacked_by['direct'].keys():
+                    # print(self.color, ': check')
+                    return True
         return False

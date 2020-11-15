@@ -44,7 +44,7 @@ class GameView:
 
         # Setup screen
         self.screen_size = screen_size
-        self.screen = pygame.display.set_mode((self.screen_size + 320, self.screen_size))
+        self.screen = pygame.display.set_mode((self.screen_size + 360, self.screen_size))
 
         # Fonts
         self.font = pygame.font.SysFont(None, 30)
@@ -97,6 +97,7 @@ class GameView:
     def draw_position(self, board, dragged_piece):
         self.screen.blit(self.background, (0, 0))
         self.draw_captured_pieces(board)
+        self.draw_move_list(board)
         self.draw_highlighed_tiles(board)
         self.draw_arrows(board)
         if board.previous_move: self.draw_previous_move(board)
@@ -128,10 +129,8 @@ class GameView:
 
 
     def draw_possible_moves(self, board):
-        for move in board.moves:
-            if len(move) > 1:
-                _, (x2, y2) = move
-                self.screen.blit(self.images['circle_image_green'], (x2 * self.square_width, y2 * self.square_height))
+        for _, (x2, y2) in board.moves:
+            self.screen.blit(self.images['circle_image_green'], (x2 * self.square_width, y2 * self.square_height))
     
     
     def draw_all_pieces(self, board, dragged_piece):
@@ -140,11 +139,11 @@ class GameView:
             for tile in rows:
                 if not isinstance(tile.state, Empty):
                     piece = board.get_piece(tile)
-                    if isinstance(piece, King): 
-                        if piece.in_check: self.screen.blit(self.images['circle_image_red'], (tile.x * self.square_width, 
-                                                                                              tile.y * self.square_height), piece.subsection)
                     if dragged_piece is not None: 
-                        if piece.id != dragged_piece.id: 
+                        if piece.id != dragged_piece.id:
+                            if isinstance(piece, King): 
+                                if piece.in_check: self.screen.blit(self.images['circle_image_red'], (tile.x * self.square_width, 
+                                                                                                      tile.y * self.square_height), piece.subsection)
                             self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
                     else: self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
 
@@ -155,8 +154,70 @@ class GameView:
 
 
     def draw_captured_pieces(self, board):
-        self.screen.fill(self.LIGHT_GRAY, (self.screen_size, 0, 320, self.screen_size))
+        self.screen.fill(self.LIGHT_GRAY, (self.screen_size, 0, self.screen.get_width() - self.screen_size, self.screen_size))
+        
+        counter = {'w': {'P': 0, 'N': 0, 'B': 0, 'R': 0, 'Q': 0}, 
+                   'b': {'P': 0, 'N': 0, 'B': 0, 'R': 0, 'Q': 0}}
 
+        for color, pieces in board.captured_pieces.items():
+            for piece in pieces:
+                if piece.symbol == 'K': continue
+                
+                x_multiplier = 1.2 if piece.symbol != 'P' else 1
+                x_offset = 22 * x_multiplier * counter[piece.color][piece.symbol]
+                y_offset = 225 if piece.color == 'w' else 20
+                                
+                if piece.symbol == 'P': piece_loc = [self.screen_size + 10, y_offset + 5]
+                elif piece.symbol == 'N': piece_loc = [self.screen_size + 10, y_offset + 80]
+                elif piece.symbol == 'B': piece_loc = [self.screen_size + 115, y_offset + 80]
+                elif piece.symbol == 'R': piece_loc = [self.screen_size + 205, y_offset + 80]
+                else: piece_loc = [self.screen_size + 225, y_offset + 5]
+                
+                counter[piece.color][piece.symbol] += 1
+                self.screen.blit(self.pieces_image, (piece_loc[0] + x_offset, piece_loc[1]), piece.subsection)
+
+
+    def draw_move_list(self, board):
+        """"""
+        font = pygame.font.SysFont(None, 18)
+                 
+            
+        # text = font.render(board.move_history, True, self.BLACK, self.LIGHT_GRAY) 
+        # self.screen.blit(text, (self.screen_size + 10, 400, 300, self.screen_size - 260))
+        
+        aa = True
+        color = self.BLACK
+        bkg = self.LIGHT_GRAY
+        
+        font = pygame.font.SysFont(None, 18)
+        
+        line_spacing = 2
+        font_height = font.size("Tg")[1]
+        
+        move_rect = (self.screen_size + 10, 400, 300, self.screen_size - 260)
+        move_rect = pygame.Rect(move_rect)
+        move_rect.inflate(-5, -5)
+        
+        y = move_rect.top
+        move_list = board.move_history
+        text = ' '.join(move_list)
+        
+        while move_list:
+            i = 1
+            
+            if y + font_height > move_rect.bottom: break
+            while font.size(text[:i])[0] < move_rect.width and i < len(text): i += 1
+            
+            if i < len(text): i = text.rfind(" ", 0, i) + 1
+            
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+            
+            self.screen.blit(image, (move_rect.left, y))
+            
+            y += font_height + line_spacing
+            text = text[i:]
+            
 
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):
         """Show message with info to the user at the bottom of the window, below the play board"""
