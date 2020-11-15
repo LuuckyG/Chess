@@ -154,10 +154,21 @@ class GameView:
 
 
     def draw_captured_pieces(self, board):
+        color = self.BLACK
+        bkg = self.LIGHT_GRAY
+        
         self.screen.fill(self.LIGHT_GRAY, (self.screen_size, 0, self.screen.get_width() - self.screen_size, self.screen_size))
+        
+        black = self.small_font.render('Black', 1, color, bkg)
+        white = self.small_font.render('White', 1, color, bkg)
+        
+        self.screen.blit(black, (self.screen_size + 10, 5))
+        self.screen.blit(white, (self.screen_size + 10, 200))
         
         counter = {'w': {'P': 0, 'N': 0, 'B': 0, 'R': 0, 'Q': 0}, 
                    'b': {'P': 0, 'N': 0, 'B': 0, 'R': 0, 'Q': 0}}
+        
+        piece_valuation = {'w': 0, 'b': 0}
 
         for color, pieces in board.captured_pieces.items():
             for piece in pieces:
@@ -165,7 +176,7 @@ class GameView:
                 
                 x_multiplier = 1.2 if piece.symbol != 'P' else 1
                 x_offset = 22 * x_multiplier * counter[piece.color][piece.symbol]
-                y_offset = 225 if piece.color == 'w' else 20
+                y_offset = 210 if piece.color == 'w' else 10
                                 
                 if piece.symbol == 'P': piece_loc = [self.screen_size + 10, y_offset + 5]
                 elif piece.symbol == 'N': piece_loc = [self.screen_size + 10, y_offset + 80]
@@ -174,28 +185,34 @@ class GameView:
                 else: piece_loc = [self.screen_size + 225, y_offset + 5]
                 
                 counter[piece.color][piece.symbol] += 1
+                piece_valuation[color] += piece.points
+                
                 self.screen.blit(self.pieces_image, (piece_loc[0] + x_offset, piece_loc[1]), piece.subsection)
-
+        
+        valuation = piece_valuation['w'] - piece_valuation['b']
+        if valuation == 0: return
+        elif valuation > 0: y = 5
+        else: y = 200
+        
+        text = ': +' + str(abs(valuation))
+        text = self.small_font.render(text, 1, (0, 0, 0))
+        self.screen.blit(text, (self.screen_size + 50, y))
+        
 
     def draw_move_list(self, board):
         """"""
-        font = pygame.font.SysFont(None, 18)
-                 
-            
-        # text = font.render(board.move_history, True, self.BLACK, self.LIGHT_GRAY) 
-        # self.screen.blit(text, (self.screen_size + 10, 400, 300, self.screen_size - 260))
-        
-        aa = True
         color = self.BLACK
         bkg = self.LIGHT_GRAY
+        
+        moves = self.small_font.render('Moves', 1, color, bkg)
+        self.screen.blit(moves, (self.screen_size + 10, 400))
         
         font = pygame.font.SysFont(None, 18)
         
         line_spacing = 2
         font_height = font.size("Tg")[1]
         
-        move_rect = (self.screen_size + 10, 400, 300, self.screen_size - 260)
-        move_rect = pygame.Rect(move_rect)
+        move_rect = pygame.Rect((self.screen_size + 10, 420, 300, self.screen_size - 260))
         move_rect.inflate(-5, -5)
         
         y = move_rect.top
