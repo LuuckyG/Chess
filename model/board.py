@@ -49,6 +49,7 @@ class Board:
         self.end_conditions = {'resignation': False,
                                'checkmate': False, 
                                'stalemate': False, 
+                               'draw_agreed': False,
                                'HMC': False, 
                                '3_fold_rep': False}
         self.HMC = 0

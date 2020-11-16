@@ -11,7 +11,7 @@ class Chess:
 
         # Game state variables
         self.play = True
-        self.status = 'game'
+        self.status = 'start_screen'
         self.win_condition = None
         
         self.move = []
@@ -48,7 +48,7 @@ class Chess:
         if self.status == 'start_screen': self.start_screen(x, y)
         elif self.status == 'settings': self.update_settings(x, y)
         elif self.status == 'game': self.play_game(x, y, is_up)
-        elif self.status == 'replay': self.new_game(x, y)
+        elif self.status == 'replay': self.play_again(x, y)
     
     
     def start_screen(self, x, y):
@@ -91,7 +91,7 @@ class Chess:
         - y: y-coordinate of mouse at click (in px)
         """
 
-        button_groups = ['vs_computer', 'ai_level']
+        button_groups = ['flip', 'vs_computer', 'ai_level']
 
         # Check if button is clicked
         for button in self.view.all_buttons:
@@ -100,12 +100,10 @@ class Chess:
                 # Update view of other buttons that are not selected
                 for related_button in self.view.all_buttons:
                     if related_button.group == button.group and related_button.selected:
-                        self.view.update_button_look(related_button, False, 
-                                                     self.view.LIGHT_GRAY, self.view.BLACK)
+                        related_button.update(False, self.view.LIGHT_GRAY, self.view.BLACK)
 
                 # Update view of clicked button
-                self.view.update_button_look(button, True, 
-                                             self.view.GREEN, self.view.WHITE)
+                button.update(True, self.view.GREEN, self.view.WHITE)
         
         # Check if user is satisfied with settings and wants to return to
         # start screen to start playing the game
@@ -140,8 +138,13 @@ class Chess:
         
         tile_x, tile_y = self.pixel_coord_to_tile(mouse_x, mouse_y)
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
+        
+        # Check if button is clicked
+        if self.view.draw_game_button.is_clicked(mouse_x, mouse_y) or \
+            self.view.resign_game_button.is_clicked(mouse_x, mouse_y): 
+                self.new_game(mouse_x, mouse_y)
 
-        if is_up and self.is_clicked:
+        elif is_up and self.is_clicked:
             # Check possible moves, and if possible
             # make the move.
             self.board.moves = self.is_clicked.valid_moves
@@ -231,24 +234,38 @@ class Chess:
     
     def update(self):
         """"""
-        # if self.play: board.check_for_resign()
-        # if self.play: board.check_for_draw()
-        # if self.play: is_check = board.check_for_check()
-        # if self.play: board.check_for_win(is_check)
-        
-        self.board.update_possible_moves()
-        self.check_for_game_end()
+        if self.status == 'game':
+            self.board.update_possible_moves()
+            self.check_for_game_end()
 
         
     def check_for_game_end(self):
         """"""
         for condition, state in self.board.end_conditions.items():
             if state: self.win_condition = condition
+        
+        if self.win_condition: self.status = 'replay'
 
 
     def new_game(self, x, y):
         """"""
-        pass
+        if self.view.draw_game_button.is_clicked(x, y): 
+            self.board.end_conditions['draw_agreed'] = True
+            self.board.winner = 'Draw'
+            
+        if self.view.resign_game_button.is_clicked(x, y): 
+            self.board.end_conditions['resignation'] = True
+            winner = 1 if self.board.current_player == 0 else 0
+            self.board.winner = ['white', 'black'][winner]
+        
+        self.status = 'replay'
+    
+    
+    def play_again(self, x, y):
+        if self.view.play_again_button.is_clicked(x, y): self.status = 'start_screen'
+        if self.view.nomore_game_button.is_clicked(x, y): 
+            self.status = 'end_game'
+            self.play = False
 
 
     def chess_coord_to_pixels(self, board_x, board_y):

@@ -48,6 +48,14 @@ class Button:
             screen.blit(text, (self.x + (self.width/2 - text.get_width()/2),
                                self.y + (self.height/2 - text.get_height()/2)))
 
+    def update(self, status, color, text_color):
+        """Method to change look of buttons, based on the fact if they are
+        selected or not."""
+        
+        self.selected = status
+        self.color = color
+        self.text_color = text_color
+
     def is_hover(self, x, y):
         """Check if you hover over the button. If so, bring the button into focus.
     

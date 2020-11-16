@@ -22,9 +22,7 @@ class Game:
             2. move stuff
             3. draw stuff
         """
-        self.chess.start_game()
-        self.board = self.chess.board
-        
+
         while self.chess.play:
             
             # get input            
@@ -39,14 +37,17 @@ class Game:
             # cap FPS if: limit_fps == True
             if self.view.limit_fps: self.view.clock.tick(self.view.fps_max)
             else: self.view.clock.tick()
-
-
+        
+        
     def draw(self):
         """draw screen"""
         
         # draw code
         if self.chess.status != 'game': self.view.draw_screens(self.chess.status)
-        else: self.view.draw_position(self.board, self.chess.is_dragged)
+        else: self.view.draw_position(self.chess.board, self.chess.is_dragged)
+        
+        x, y = pygame.mouse.get_pos()
+        self.view.follow_mouse(x, y)
         
         # update / flip screen.
         pygame.display.flip()
@@ -54,9 +55,6 @@ class Game:
 
     def update(self):
         """move guys."""
-        
-        # if self.chess.player_list[self.chess.current_player] == 'AI': self.chess.ai_move()
-        
         self.chess.update()
 
 
