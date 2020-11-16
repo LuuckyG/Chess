@@ -1,6 +1,5 @@
 import pygame
 from pygame.locals import *
-
 from controller.chess import Chess
 
 

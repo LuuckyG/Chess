@@ -1,10 +1,7 @@
 import os 
 import pygame
-from pygame.transform import scale2x
-
 from view.button import Button
 from model.pieces import Empty, King
-from model.utils import opposite, chess_coord_to_pixels, pixel_coord_to_chess, position_to_key
 
 
 class GameView:
@@ -111,7 +108,7 @@ class GameView:
                     
 
     def draw_position(self, board, dragged_piece=None):
-        self.screen.blit(self.background, (0, 0))
+        self.draw_board(board)
         self.draw_captured_pieces(board)
         self.draw_move_list(board)
         self.draw_highlighed_tiles(board)
@@ -121,53 +118,56 @@ class GameView:
         self.draw_all_pieces(board, dragged_piece)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)
         
+    def draw_board(self, board):
+        if not board.is_flipped: pygame.transform.rotate(self.background, 180)
+        self.screen.blit(self.background, (0, 0))
 
     def draw_highlighed_tiles(self, board):
         for x, y in board.highlighted_tiles:
             pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
                             (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
     
-    
     def draw_previous_move(self, board):
         (x1, y1), (x2, y2) = board.previous_move
+        if not board.is_flipped: y1 = 7 - y1
+        if not board.is_flipped: y2 = 7 - y2        
         self.screen.blit(self.images['yellow_box'], (x1 * self.square_width, y1 * self.square_height))
         self.screen.blit(self.images['yellow_box'], (x2 * self.square_width, y2 * self.square_height))
             
-    
     def draw_arrows(self, board):
         ##### FOR NOW: DRAW 2 TILES AT BEGIN AND END POSITION ######
         for arrow in board.arrow_coordinates:
-            (x1, y1), (x2, y2) = arrow
+            (x1, y1), (x2, y2) = arrow            
             pygame.draw.rect(self.screen, self.GREEN, 
                             (x1 * self.square_width, y1 * self.square_height, self.square_width, self.square_height), 0)
             pygame.draw.rect(self.screen, self.GREEN, 
                             (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
 
-
     def draw_possible_moves(self, board):
         for _, (x2, y2) in board.moves:
+            if not board.is_flipped: y2 = 7 - y2
             self.screen.blit(self.images['circle_image_green'], (x2 * self.square_width, y2 * self.square_height))
     
-    
     def draw_all_pieces(self, board, dragged_piece):
-        player = 0 # Show white under (make this flexible)
         for rows in board.position:
-            for tile in rows:
-                if not isinstance(tile.state, Empty):
-                    piece = board.get_piece(tile)
+            for square in rows:
+                if not isinstance(square, Empty):                    
+                    y = 7 - square.y if not board.is_flipped else square.y
                     if dragged_piece is not None: 
-                        if piece.id != dragged_piece.id:
-                            if isinstance(piece, King): 
-                                if piece.in_check: self.screen.blit(self.images['circle_image_red'], (tile.x * self.square_width, 
-                                                                                                      tile.y * self.square_height), piece.subsection)
-                            self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
-                    else: self.screen.blit(self.pieces_image, (tile.x * self.square_width, tile.y * self.square_height), piece.subsection)
+                        if square.id != dragged_piece.id:
+                            if isinstance(square, King): 
+                                if square.in_check: self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, 
+                                                                                                       y * self.square_height), square.subsection)
+                            self.screen.blit(self.pieces_image, (square.x * self.square_width, y * self.square_height), square.subsection)
+                    else: 
+                        if isinstance(square, King): 
+                                if square.in_check: self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, 
+                                                                                                       y * self.square_height), square.subsection)
+                        self.screen.blit(self.pieces_image, (square.x * self.square_width, y * self.square_height), square.subsection)
 
-    
     def draw_dragged_piece(self, dragged_piece):
         x, y = pygame.mouse.get_pos()
         self.screen.blit(self.pieces_image, (x - self.square_width / 2, y - self.square_height / 2), dragged_piece.subsection)
-
 
     def draw_captured_pieces(self, board):
         color = self.BLACK
@@ -214,7 +214,6 @@ class GameView:
         text = self.small_font.render(text, 1, (0, 0, 0))
         self.screen.blit(text, (self.screen_size + 50, y))
         
-
     def draw_move_list(self, board):
         """"""
         # Setup
@@ -257,7 +256,6 @@ class GameView:
         self.draw_game_button.draw(self.screen, self.font)
         self.resign_game_button.draw(self.screen, self.font)
     
-    
     def draw_end_of_game(self, board):
         for condition, state in board.end_conditions.items():
             if state:
@@ -274,7 +272,6 @@ class GameView:
                 self.draw_play_again_screen(msg)
                 break
 
-
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):
         """Show message with info to the user at the bottom of the window, below the play board"""       
         text = font.render(message, True, text_color, background)
@@ -283,7 +280,6 @@ class GameView:
 
         # Show message
         self.screen.blit(text, text_box)
-
 
     def draw_start_screen(self):
         """Start screen"""
@@ -306,7 +302,6 @@ class GameView:
         self.start_game_button.draw(self.screen, self.big_font)
         self.quit_game_button.draw(self.screen, self.small_font, thickness=1)
 
-   
     def draw_settings_screen(self):
         """Settings screen"""
         self.screen.fill(self.LIGHT_GRAY)
@@ -354,7 +349,6 @@ class GameView:
         self.screen.blit(ai_level_text, ai_level_text_box)
         self.screen.blit(board_text, board_text_box)
 
-
     def draw_play_again_screen(self, msg):
         """Show message if player wants to play another game"""
         
@@ -376,7 +370,6 @@ class GameView:
         self.play_again_button.draw(self.screen, self.font)
         self.nomore_game_button.draw(self.screen, self.font)
 
-
     def draw_thanks(self):
         """Show 'thank you' message before closing application."""
         self.screen.fill(self.BLACK)
@@ -388,7 +381,6 @@ class GameView:
         self.screen.blit(self.start_screen_image, (x_pos, y_pos))
         
         self.show_message('Thanks for Playing!', self.big_font, text_color=self.YELLOW, background=self.BLACK)
-
 
     def get_orig_images(self):
         """Load all the media into one dictionary"""
@@ -412,8 +404,7 @@ class GameView:
 
         images = self.rescale_images(**images)
         return images
-        
-        
+           
     def rescale_images(self, **kwargs):
         """Rescale the media so that each piece can fit in a square"""
         rescaled_images = {}
@@ -421,7 +412,6 @@ class GameView:
             image = pygame.transform.scale(image, (self.square_height, self.square_width))
             rescaled_images[key] = image
         return rescaled_images
-    
     
     def create_buttons(self):
         """Function to create the buttons needed to navigate throught the game"""
@@ -529,7 +519,7 @@ class GameView:
                                              y=0.6 * height - 15, 
                                              width=0.2 * width, 
                                              height=30, 
-                                             value=True,
+                                             value=False,
                                              group='flip', 
                                              selected=True, 
                                              text_color=self.WHITE, 
@@ -540,8 +530,8 @@ class GameView:
                                         y=0.6 * height - 15, 
                                         width=0.2 * width, 
                                         height=30,
-                                        value=False,
-                                        group='flip', 
+                                        value=True,
+                                        group='flip',
                                         selected=False, 
                                         text_color=self.BLACK, 
                                         text='Flip')

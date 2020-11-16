@@ -1,3 +1,4 @@
+from model.pieces import Empty
 from view.view import GameView
 from model.board import Board
 
@@ -36,8 +37,7 @@ class Chess:
         
         # Board
         self.board = None
-
-
+        
     def process_click(self, x, y, is_up=False):
         """The main method of the controller.
         This method determines in which phase of the game we are and 
@@ -52,7 +52,6 @@ class Chess:
         elif self.status == 'settings': self.update_settings(x, y)
         elif self.status == 'game': self.play_game(x, y, is_up)
         elif self.status == 'replay': self.play_again(x, y)
-    
     
     def start_screen(self, x, y):
         """Start screen of the game.
@@ -74,15 +73,13 @@ class Chess:
             self.status = 'end_game'
             self.play = False
 
-
     def get_settings(self):
         """Get the selected settings by the user"""
         
         for button in self.view.all_buttons:
             group = button.group
-            if (group == 'vs_computer' or group == 'ai_level') and button.selected:
+            if (group == 'flip' or group == 'vs_computer' or group == 'ai_level') and button.selected:
                 self.settings[group] = button.value
-
 
     def update_settings(self, x, y):
         """Settings page.
@@ -112,7 +109,6 @@ class Chess:
         # start screen to start playing the game
         if self.view.back_button.is_clicked(x, y):
             self.status = 'start_screen'
-            
 
     def start_game(self):
         """The game is started with the selected settings.
@@ -127,8 +123,7 @@ class Chess:
         self.board.player_list.append('Human')
         
         if self.settings['vs_computer']: self.board.player_list.append('AI')
-        else: self.board.player_list.append('Human')
-        
+        else: self.board.player_list.append('Human') 
         
     def play_game(self, mouse_x, mouse_y, is_up):
         """[summary]
@@ -139,8 +134,8 @@ class Chess:
             is_up (bool): [description]
         """
         
-        tile_x, tile_y = self.pixel_coord_to_tile(mouse_x, mouse_y)
-        tile = self.board.get_tile_at_pos(tile_x, tile_y)
+        x, y = self.pixel_coord_to_tile(mouse_x, mouse_y)
+        square = self.board.get_square(x, y)
         
         # Check if button is clicked
         if is_up and (self.view.draw_game_button.is_clicked(mouse_x, mouse_y) or \
@@ -151,22 +146,22 @@ class Chess:
             # Check possible moves, and if possible
             # make the move.
             self.board.moves = self.is_clicked.valid_moves
+            print(self.board.moves)
+            print(self.is_clicked.id)
                 
-            if (tile_x, tile_y) != self.left_click:
-                self.move = [self.left_click, (tile_x, tile_y)]
+            if (square.x, square.y) != self.left_click:
+                self.move = [self.left_click, (square.x, square.y)]
                 
                 if self.is_clicked.can_move and self.move in self.is_clicked.valid_moves:
                     self.board.move_piece(color=self.board.current_color, 
                                           moving_piece=self.is_clicked, 
                                           move=self.move)
                     
-                    self.update()
-                    
+                    self.update()                    
                     self.board.next_turn(self.is_clicked, self.move)
                                         
-                    if self.settings['flip']: self.is_flipped = not self.is_flipped
-                    self.board.is_flipped = self.is_flipped
-                    
+                    if self.settings['flip']: self.board.is_flipped = not self.board.is_flipped
+                                        
                 self.board.moves = []
                 self.is_clicked = None
                 self.is_dragged = None
@@ -174,23 +169,20 @@ class Chess:
             else: self.is_dragged = None
         
         else:
-            if tile is not None and not (self.is_clicked and self.is_dragged):
-                piece = self.board.get_piece(tile)
-
-                if piece and piece.color == self.board.current_color:
-                    self.is_clicked = piece
-                    self.is_dragged = piece
-                    self.left_click = (tile_x, tile_y)
+            if square is not None and not (self.is_clicked and self.is_dragged):
+                
+                if not isinstance(square, Empty) and square.color == self.board.current_color:
+                    self.is_clicked = square
+                    self.is_dragged = square
+                    self.left_click = (square.x, square.y)
                 
                 else: self.reset_highlights_and_arrows()
-
 
     def reset_highlights_and_arrows(self):
         """Reset highlights and arrows from board"""
         self.board.moves = []
         self.board.highlighted_tiles = []
         self.board.arrow_coordinates = []
-
 
     def process_right_click(self, mouse_x, mouse_y, is_up):
         """Get annotations drawn on the board using the right mouse button.
@@ -229,27 +221,23 @@ class Chess:
         # Mouse button is pressed
         else: self.right_click = (x, y)          
 
-
     def ai_move(self):
         """"""
         pass
-
     
     def update(self):
         """"""
         if self.status == 'game':
-            self.check_for_game_end()
             self.board.update_possible_moves()
-
-        
+            self.check_for_game_end()
+                
     def check_for_game_end(self):
         """"""
         for condition, state in self.board.end_conditions.items():
             if state: 
                 self.win_condition = condition
                 self.status = 'replay'
-                # self.view.draw_end_of_game(self.board)
-
+                break
 
     def new_game(self, x, y):
         """"""
@@ -262,18 +250,15 @@ class Chess:
             winner = 1 if self.board.current_player == 0 else 0
             self.board.winner = ['White', 'Black'][winner]
     
-    
     def play_again(self, x, y):
         if self.view.play_again_button.is_clicked(x, y): self.status = 'start_screen'
         if self.view.nomore_game_button.is_clicked(x, y): 
             self.status = 'end_game'
             self.play = False
 
-
     def chess_coord_to_pixels(self, board_x, board_y):
         """Get pixel coordinates from chess board coordinates"""
         return board_x * self.view.square_width, board_y * self.view.square_height
-
 
     def pixel_coord_to_tile(self, pixel_x, pixel_y):
         """Get board coordinates from pixel board coordinates"""
