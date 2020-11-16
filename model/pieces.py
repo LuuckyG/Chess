@@ -225,11 +225,12 @@ class Piece:
         self.set_piece_value(self.value_table)
         self.set_coordinate()
     
-    def can_block_or_capture(self, board, attack_line):
+    def can_block_or_capture(self, attack_line):
         """If check, or pinned, the piece may be able to capture or block attacker"""
         moves = []
         for x1, y1 in attack_line:
-            if [(self.x, self.y), (x1, y1)] in self.valid_moves: moves.append([(self.x, self.y), (x1, y1)])
+            if [(self.x, self.y), (x1, y1)] in self.valid_moves: 
+                moves.append([(self.x, self.y), (x1, y1)])
         return moves
     
     def reset(self):

@@ -47,7 +47,6 @@ class Chess:
         - x: x-coordinate of mouse at click (in px)
         - y: y-coordinate of mouse at click (in px)
         """
-        
         if self.status == 'start_screen': self.start_screen(x, y)
         elif self.status == 'settings': self.update_settings(x, y)
         elif self.status == 'game': self.play_game(x, y, is_up)
@@ -62,7 +61,6 @@ class Chess:
         - x: x-coordinate of mouse at click (in px)
         - y: y-coordinate of mouse at click (in px)
         """
-
         if self.view.start_game_button.is_clicked(x, y):
             self.status = 'game'
             self.get_settings()
@@ -75,7 +73,6 @@ class Chess:
 
     def get_settings(self):
         """Get the selected settings by the user"""
-        
         for button in self.view.all_buttons:
             group = button.group
             if (group == 'flip' or group == 'vs_computer' or group == 'ai_level') and button.selected:
@@ -90,7 +87,6 @@ class Chess:
         - x: x-coordinate of mouse at click (in px)
         - y: y-coordinate of mouse at click (in px)
         """
-
         button_groups = ['flip', 'vs_computer', 'ai_level']
 
         # Check if button is clicked
@@ -133,13 +129,13 @@ class Chess:
             mouse_y ([type]): [description]
             is_up (bool): [description]
         """
-        
         x, y = self.pixel_coord_to_tile(mouse_x, mouse_y)
         square = self.board.get_square(x, y)
         
         # Check if button is clicked
-        if is_up and (self.view.draw_game_button.is_clicked(mouse_x, mouse_y) or \
-            self.view.resign_game_button.is_clicked(mouse_x, mouse_y)): 
+        if (is_up 
+            and (self.view.draw_game_button.is_clicked(mouse_x, mouse_y) 
+                 or self.view.resign_game_button.is_clicked(mouse_x, mouse_y))): 
                 self.new_game(mouse_x, mouse_y)
 
         elif is_up and self.is_clicked:
@@ -152,14 +148,13 @@ class Chess:
             if (square.x, square.y) != self.left_click:
                 self.move = [self.left_click, (square.x, square.y)]
                 
-                if self.is_clicked.can_move and self.move in self.is_clicked.valid_moves:
+                if (self.is_clicked.can_move 
+                    and self.move in self.is_clicked.valid_moves):
                     self.board.move_piece(color=self.board.current_color, 
                                           moving_piece=self.is_clicked, 
                                           move=self.move)
-                    
                     self.update()                    
                     self.board.next_turn(self.is_clicked, self.move)
-                                        
                     if self.settings['flip']: self.board.is_flipped = not self.board.is_flipped
                                         
                 self.board.moves = []
@@ -170,12 +165,10 @@ class Chess:
         
         else:
             if square is not None and not (self.is_clicked and self.is_dragged):
-                
                 if not isinstance(square, Empty) and square.color == self.board.current_color:
                     self.is_clicked = square
                     self.is_dragged = square
                     self.left_click = (square.x, square.y)
-                
                 else: self.reset_highlights_and_arrows()
 
     def reset_highlights_and_arrows(self):
@@ -193,7 +186,6 @@ class Chess:
             is_up (bool): variable indicating whether the mouse button is pressed
                 or released.
         """
-        
         x, y = self.pixel_coord_to_tile(mouse_x, mouse_y)
 
         # Mouse button is released

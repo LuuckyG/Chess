@@ -261,7 +261,7 @@ class Board:
             king_attacker_ids = king.attacked_by['direct'].keys()
             
             for attacker_id in king_attacker_ids:
-                moves = piece.can_block_or_capture(self, king.attacked_by['direct'][attacker_id])
+                moves = piece.can_block_or_capture(king.attacked_by['direct'][attacker_id])
             
                 if moves:
                     piece.can_move = True
@@ -278,7 +278,7 @@ class Board:
             
             for attacker_id in piece_attacker_ids:
                 if attacker_id in king_attacker_ids:
-                    moves = piece.can_block_or_capture(self, king.attacked_by['indirect'][attacker_id])
+                    moves = piece.can_block_or_capture(king.attacked_by['indirect'][attacker_id])
             
                     if moves: piece.can_move = True
                     else: piece.can_move = False
@@ -312,7 +312,6 @@ class Board:
             king_x, king_y = self.king_position[color]
             king = self.position[king_y][king_x]
             king.moves(self)
-            
             self.all_possible_moves[king.color].extend(king.valid_moves)
             
             if king.in_check or king.attacked_by['indirect']:
