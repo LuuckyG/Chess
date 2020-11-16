@@ -33,6 +33,9 @@ class Chess:
 
         # View
         self.view = GameView()
+        
+        # Board
+        self.board = None
 
 
     def process_click(self, x, y, is_up=False):
@@ -44,7 +47,7 @@ class Chess:
         - x: x-coordinate of mouse at click (in px)
         - y: y-coordinate of mouse at click (in px)
         """
-
+        
         if self.status == 'start_screen': self.start_screen(x, y)
         elif self.status == 'settings': self.update_settings(x, y)
         elif self.status == 'game': self.play_game(x, y, is_up)
@@ -140,8 +143,8 @@ class Chess:
         tile = self.board.get_tile_at_pos(tile_x, tile_y)
         
         # Check if button is clicked
-        if self.view.draw_game_button.is_clicked(mouse_x, mouse_y) or \
-            self.view.resign_game_button.is_clicked(mouse_x, mouse_y): 
+        if is_up and (self.view.draw_game_button.is_clicked(mouse_x, mouse_y) or \
+            self.view.resign_game_button.is_clicked(mouse_x, mouse_y)): 
                 self.new_game(mouse_x, mouse_y)
 
         elif is_up and self.is_clicked:
@@ -235,16 +238,17 @@ class Chess:
     def update(self):
         """"""
         if self.status == 'game':
-            self.board.update_possible_moves()
             self.check_for_game_end()
+            self.board.update_possible_moves()
 
         
     def check_for_game_end(self):
         """"""
         for condition, state in self.board.end_conditions.items():
-            if state: self.win_condition = condition
-        
-        if self.win_condition: self.status = 'replay'
+            if state: 
+                self.win_condition = condition
+                self.status = 'replay'
+                # self.view.draw_end_of_game(self.board)
 
 
     def new_game(self, x, y):
@@ -256,9 +260,7 @@ class Chess:
         if self.view.resign_game_button.is_clicked(x, y): 
             self.board.end_conditions['resignation'] = True
             winner = 1 if self.board.current_player == 0 else 0
-            self.board.winner = ['white', 'black'][winner]
-        
-        self.status = 'replay'
+            self.board.winner = ['White', 'Black'][winner]
     
     
     def play_again(self, x, y):

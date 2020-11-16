@@ -40,7 +40,7 @@ class Button:
         - thickness: the thickness of the border of the button
         """
         pygame.draw.rect(screen, self.text_color, (self.x - thickness, self.y - thickness, 
-                                    self.width + 2 * thickness, self.height + 2 * thickness), 0)
+                                                   self.width + 2 * thickness, self.height + 2 * thickness), 0)
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height), 0)
 
         if self.text != '':
@@ -63,9 +63,7 @@ class Button:
         - x: the x-coordinate of the mouse
         - y: the y-coordinate of the mouse
         """
-        if self.rect.collidepoint(x, y):
-            return True
-        return False
+        return self.rect.collidepoint(x, y)
     
     def is_clicked(self, x, y):
         """Check if you a button is clicked.
@@ -74,6 +72,4 @@ class Button:
         - x: the x-coordinate of the mouse
         - y: the y-coordinate of the mouse
         """
-        if self.rect.collidepoint(x, y):
-            return True
-        return False
+        return self.rect.collidepoint(x, y)

@@ -43,7 +43,7 @@ class Game:
         """draw screen"""
         
         # draw code
-        if self.chess.status != 'game': self.view.draw_screens(self.chess.status)
+        if self.chess.status != 'game': self.view.draw_screens(self.chess.status, self.chess.board)
         else: self.view.draw_position(self.chess.board, self.chess.is_dragged)
         
         x, y = pygame.mouse.get_pos()

@@ -74,7 +74,7 @@ class GameView:
         self.create_buttons()
 
 
-    def draw_screens(self, status):
+    def draw_screens(self, status, board):
         """Method to control what screen is draw when tracking mouse movement.
         Default mode is drawing the starting screen."""
 
@@ -83,7 +83,8 @@ class GameView:
         elif status == 'settings':
             self.draw_settings_screen()
         elif status == 'replay':
-            self.draw_play_again_screen()
+            self.draw_position(board)
+            self.draw_end_of_game(board)
         elif status == 'end_game':
             self.draw_thanks()
 
@@ -109,7 +110,7 @@ class GameView:
                     else: button.color = self.LIGHT_GRAY
                     
 
-    def draw_position(self, board, dragged_piece):
+    def draw_position(self, board, dragged_piece=None):
         self.screen.blit(self.background, (0, 0))
         self.draw_captured_pieces(board)
         self.draw_move_list(board)
@@ -255,7 +256,24 @@ class GameView:
         # Draw `draw` and `resign` buttons
         self.draw_game_button.draw(self.screen, self.font)
         self.resign_game_button.draw(self.screen, self.font)
-            
+    
+    
+    def draw_end_of_game(self, board):
+        for condition, state in board.end_conditions.items():
+            if state:
+                msg = ''
+                
+                if condition == 'checkmate' or condition == 'resignation': msg = f'{board.winner} Wins!'
+                    
+                elif condition == 'stalemate': msg = 'Stalemate.'
+
+                elif (condition == 'draw_agreed' or 
+                      condition == 'HMC' or 
+                      condition == '3_fold_rep'): msg = 'Draw.'
+
+                self.draw_play_again_screen(msg)
+                break
+
 
     def show_message(self, message, font, text_color=(255, 255, 255), background=(0, 0, 0)):
         """Show message with info to the user at the bottom of the window, below the play board"""       
@@ -337,19 +355,24 @@ class GameView:
         self.screen.blit(board_text, board_text_box)
 
 
-    def draw_play_again_screen(self):
+    def draw_play_again_screen(self, msg):
         """Show message if player wants to play another game"""
-        border = 2
-        self.screen.fill(self.BLACK, (0.20 * self.screen_size - border, 0.40 * self.screen_size - border, 
-                                       0.60 * self.screen_size + 2 * border, 0.20 * self.screen_size + 2 * border))
-        self.screen.fill(self.ORANGE, (0.20 * self.screen_size, 0.40 * self.screen_size, 
-                                       0.60 * self.screen_size, 0.20 * self.screen_size))
-
-        text = self.big_font.render('Play Again?', True, self.BLACK, self.ORANGE)
+        
+        # Create text box
+        text = self.big_font.render(f'{msg} Play Again?', True, self.BLACK, self.ORANGE)
         text_box = text.get_rect()
         text_box.center = (0.5 * self.screen_size, 0.45 * self.screen_size)
-        self.screen.blit(text, text_box)
+        
+        # Create box around text
+        space = 25
+        border = 2
+        self.screen.fill(self.BLACK, (text_box.left - space - border, text_box.top - space - border, 
+                                      text_box.width + 2 * (space + border), 0.20 * self.screen_size + 2 * border))
+        self.screen.fill(self.ORANGE, (text_box.left - space, text_box.top - space, 
+                                       text_box.width + 2 * space, 0.20 * self.screen_size))
 
+        # Draw to screen
+        self.screen.blit(text, text_box)
         self.play_again_button.draw(self.screen, self.font)
         self.nomore_game_button.draw(self.screen, self.font)
 

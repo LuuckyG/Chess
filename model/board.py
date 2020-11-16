@@ -8,24 +8,24 @@ class Board:
     """Class to store current position on the board and 
     to keep track of all the pieces on the board."""
 
-    # START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
-    #                  ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 3
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 4
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 5
-    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 6
-    #                  ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
-    #                  ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
-    
-    
     START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
-                     ['Pw', 'Pw', 'Pw', 'Pw', 0, 'Pw', 'Pw', 'Pw'],  # 2
-                     [0, 0, 0, 0, 'Pw', 0, 0, 0],  # 3
+                     ['Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw', 'Pw'],  # 2
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 3
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 4
                      [0, 0, 0, 0, 0, 0, 0, 0],  # 5
-                     [0, 0, 0, 'Pb', 0, 'Pb', 0, 0],  # 6
-                     ['Pb', 'Pb', 'Pb', 0, 'Pb', 0, 'Pb', 'Pb'],  # 7
+                     [0, 0, 0, 0, 0, 0, 0, 0],  # 6
+                     ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
                      ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
+    
+    
+    # START_POSITION = [['Rw', 'Nw', 'Bw', 'Qw', 'Kw', 'Bw', 'Nw', 'Rw'],  # 1
+    #                  ['Pw', 'Pw', 'Pw', 'Pw', 0, 'Pw', 'Pw', 'Pw'],  # 2
+    #                  [0, 0, 0, 0, 'Pw', 0, 0, 0],  # 3
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 4
+    #                  [0, 0, 0, 0, 0, 0, 0, 0],  # 5
+    #                  [0, 0, 0, 'Pb', 0, 'Pb', 0, 0],  # 6
+    #                  ['Pb', 'Pb', 'Pb', 0, 'Pb', 0, 'Pb', 'Pb'],  # 7
+    #                  ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
 
 
     def __init__(self, square_width, square_height, is_flipped):
@@ -373,7 +373,7 @@ class Board:
             if king.in_check and not self.all_possible_moves[color]: 
                 print('checkmate')
                 self.end_conditions['checkmate'] = True
-                self.winner = 'b' if color == 'w' else 'w'
+                self.winner = 'Black' if color == 'w' else 'White'
     
     
     def next_turn(self, piece, move):
