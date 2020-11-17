@@ -33,18 +33,18 @@ class Board:
         
         # Win conditions
         self.winner = None
+        self.HMC = 0
         self.end_conditions = {'resignation': False,
                                'checkmate': False, 
                                'stalemate': False, 
                                'draw_agreed': False,
                                'HMC': False, 
                                '3_fold_rep': False}
-        self.HMC = 0
-
+        
         # Player variables
         self.player_list = []
         self.current_player = 0
-        self.current_color = 'wb'[self.current_player]
+        self.current_color = 'w'
 
         # Move variables
         self.moves = []
@@ -110,7 +110,6 @@ class Board:
         """"""
         if (0 <= x <= 7) and (0 <= y <= 7):
             y = self.flipped_board(y)
-            print(x, y)
             return self.position[y][x]
             
     def move_piece(self, color, moving_piece, move):
@@ -155,7 +154,7 @@ class Board:
         self.make_move(move)
         
         # Capture other pawn
-        ept_y = y2 - 1 if self.current_color == 'w' else y2 + 1
+        ept_y = y2 - self.moving.walk_direction
         en_passant_target = self.position[ept_y][x2]
         
         if not isinstance(en_passant_target, Empty): self.remove_piece(en_passant_target)

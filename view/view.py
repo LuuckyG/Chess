@@ -1,5 +1,6 @@
 import os 
 import pygame
+from view.arrow import Arrow
 from view.button import Button
 from model.pieces import Empty, King
 
@@ -13,13 +14,14 @@ class GameView:
     YELLOW = (255, 233, 33)
     ORANGE = (255,237,194)
     RED = (255, 82, 82)
-    RED_HIGHLIGHT = (225, 0, 0, 50)
+    RED_HIGHLIGHT = (225, 0, 0, 40)
+    GREEN_ARROW = (71, 255, 78, 40)
     BLUE = (69, 125, 255)
     BLACK = (0, 0, 0)
     LIGHT_GRAY = (225, 225, 225)
     GREEN = (71, 255, 78)
 
-    def __init__(self, screen_size=640, border=20, line_width=5):
+    def __init__(self, screen_size=640, border=20, line_width=10):
         """Make a window of the same size as the background, set its title, and
         load the background image onto it (the board)
         
@@ -108,26 +110,32 @@ class GameView:
                     
 
     def draw_position(self, board, dragged_piece=None):
+        """Main drawing method. 
+        This method contains all the methods that are called during the draw step of the game.
+        """
         self.draw_board(board)
         self.draw_captured_pieces(board)
         self.draw_move_list(board)
         self.draw_highlighed_tiles(board)
-        self.draw_arrows(board)
         if board.previous_move: self.draw_previous_move(board)
         self.draw_possible_moves(board)
         self.draw_all_pieces(board, dragged_piece)
+        self.draw_arrows(board)
         if dragged_piece: self.draw_dragged_piece(dragged_piece)
         
     def draw_board(self, board):
+        """Draw background"""
         if not board.is_flipped: pygame.transform.rotate(self.background, 180)
         self.screen.blit(self.background, (0, 0))
 
     def draw_highlighed_tiles(self, board):
+        """Draw red squares on the squares the user selected"""
         for x, y in board.highlighted_tiles:
             pygame.draw.rect(self.screen, self.RED_HIGHLIGHT, 
                             (x * self.square_width, y * self.square_height, self.square_width, self.square_height), 0)
     
     def draw_previous_move(self, board):
+        """Highlight squares to indicate last move"""
         (x1, y1), (x2, y2) = board.previous_move
         if not board.is_flipped: y1 = 7 - y1
         if not board.is_flipped: y2 = 7 - y2        
@@ -135,20 +143,27 @@ class GameView:
         self.screen.blit(self.images['yellow_box'], (x2 * self.square_width, y2 * self.square_height))
             
     def draw_arrows(self, board):
-        ##### FOR NOW: DRAW 2 TILES AT BEGIN AND END POSITION ######
-        for arrow in board.arrow_coordinates:
-            (x1, y1), (x2, y2) = arrow            
-            pygame.draw.rect(self.screen, self.GREEN, 
-                            (x1 * self.square_width, y1 * self.square_height, self.square_width, self.square_height), 0)
-            pygame.draw.rect(self.screen, self.GREEN, 
-                            (x2 * self.square_width, y2 * self.square_height, self.square_width, self.square_height), 0)
-
+        """Draw arrows"""
+        for coord in board.arrow_coordinates:
+            (x1, y1), (x2, y2) = coord
+            
+            arrow = Arrow(x1, y1, x2, y2, self.square_width, self.square_height)
+            arrow.create()
+            
+            if arrow.middle: 
+                pygame.draw.lines(self.screen, self.GREEN_ARROW, False, [(arrow.begin[0], arrow.middle[1]), arrow.middle, arrow.end], self.line_width)
+            else: pygame.draw.line(self.screen, self.GREEN_ARROW, arrow.begin, arrow.end, self.line_width)
+            
+            pygame.draw.lines(self.screen, self.GREEN_ARROW, False, [arrow.point1, arrow.end, arrow.point2], self.line_width)
+            
     def draw_possible_moves(self, board):
+        """Show dots on squares that indicate positions the clicked piece can move to"""
         for _, (x2, y2) in board.moves:
             if not board.is_flipped: y2 = 7 - y2
             self.screen.blit(self.images['circle_image_green'], (x2 * self.square_width, y2 * self.square_height))
     
     def draw_all_pieces(self, board, dragged_piece):
+        """Draw all pieces on the board"""
         for rows in board.position:
             for square in rows:
                 if not isinstance(square, Empty):                    
@@ -156,20 +171,22 @@ class GameView:
                     if dragged_piece is not None: 
                         if square.id != dragged_piece.id:
                             if isinstance(square, King): 
-                                if square.in_check: self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, 
-                                                                                                       y * self.square_height), square.subsection)
+                                if square.in_check: 
+                                    self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, y * self.square_height), square.subsection)
                             self.screen.blit(self.pieces_image, (square.x * self.square_width, y * self.square_height), square.subsection)
                     else: 
                         if isinstance(square, King): 
-                                if square.in_check: self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, 
-                                                                                                       y * self.square_height), square.subsection)
+                                if square.in_check: 
+                                    self.screen.blit(self.images['circle_image_red'], (square.x * self.square_width, y * self.square_height), square.subsection)
                         self.screen.blit(self.pieces_image, (square.x * self.square_width, y * self.square_height), square.subsection)
 
     def draw_dragged_piece(self, dragged_piece):
+        """Show dragging piece at mouse location"""
         x, y = pygame.mouse.get_pos()
         self.screen.blit(self.pieces_image, (x - self.square_width / 2, y - self.square_height / 2), dragged_piece.subsection)
 
     def draw_captured_pieces(self, board):
+        """Draw captured piece on the side of the board"""
         color = self.BLACK
         bkg = self.LIGHT_GRAY
         
@@ -215,7 +232,7 @@ class GameView:
         self.screen.blit(text, (self.screen_size + 50, y))
         
     def draw_move_list(self, board):
-        """"""
+        """Notate the moves of the game"""
         # Setup
         color = self.BLACK
         bkg = self.LIGHT_GRAY
@@ -257,6 +274,7 @@ class GameView:
         self.resign_game_button.draw(self.screen, self.font)
     
     def draw_end_of_game(self, board):
+        """Show message indicating end of game and the winner"""
         for condition, state in board.end_conditions.items():
             if state:
                 msg = ''

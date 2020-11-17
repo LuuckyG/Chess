@@ -300,16 +300,18 @@ class Pawn(Piece):
             if self.x != 0:
                 square = board.position[self.y][self.x - 1]
                 if board.previous_move == [(self.x - 1, self.y + w), (self.x - 1, self.y)] \
-                    and isinstance(square, Pawn):
-                        self.add_attack(square)
-                        self.EPT = (square.x, square.y)
+                   and isinstance(square, Pawn):
+                        self.valid_moves.append([(self.x, self.y), 
+                                                 (square.x, square.y + self.walk_direction)])
+                        self.EPT = (square.x, square.y + self.walk_direction)
                                     
             if self.x != 7:
                 square = board.position[self.y][self.x + 1]
                 if board.previous_move == [(self.x + 1, self.y + w), (self.x + 1, self.y)] \
-                    and isinstance(square, Pawn):
-                        self.add_attack(square)
-                        self.EPT = (square.x, square.y)
+                   and isinstance(square, Pawn):
+                        self.valid_moves.append([(self.x, self.y), 
+                                                 (square.x, square.y + self.walk_direction)])
+                        self.EPT = (square.x, square.y + self.walk_direction)
 
     
 class Knight(Piece):
