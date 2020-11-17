@@ -1,5 +1,5 @@
-.idea/
-.vscode/
-__pycache__/
+.idea
+.vscode
+__pycache__
 *.pyc
 *.db
