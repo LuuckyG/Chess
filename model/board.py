@@ -256,7 +256,6 @@ class Board:
         
         # Check: look for block or capture of attacking piece
         elif king.in_check:
-            print(king.attacked_by['direct'])
             king_attacker_ids = king.attacked_by['direct'].keys()
             
             for attacker_id in king_attacker_ids:

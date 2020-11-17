@@ -242,12 +242,12 @@ class GameView:
         
         # Title
         title = self.small_font.render('Moves', 1, color, bkg)
-        self.screen.blit(title, (self.screen_size + 10, 400))
+        self.screen.blit(title, (self.screen_size + 10, 380))
 
         # Get box where moves are blitted
         move_list = board.move_history
-        move_rect = pygame.Rect((self.screen_size + 10, 420, 300, self.screen_size - 260))
-        move_rect.inflate(-5, -5)
+        move_rect = pygame.Rect((self.screen_size + 10, 400, 340, self.screen_size - 260))
+        # move_rect.inflate(-5, -5)
         
         y = move_rect.top
         text = ' '.join(move_list)
