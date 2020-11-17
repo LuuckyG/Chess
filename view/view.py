@@ -284,7 +284,7 @@ class GameView:
                 elif condition == 'stalemate': msg = 'Stalemate.'
 
                 elif (condition == 'draw_agreed' or 
-                      condition == 'HMC' or 
+                      condition == 'FMR' or 
                       condition == '3_fold_rep'): msg = 'Draw.'
 
                 self.draw_play_again_screen(msg)

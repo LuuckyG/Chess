@@ -33,12 +33,12 @@ class Board:
         
         # Win conditions
         self.winner = None
-        self.HMC = 0
+        self.FMR = 0
         self.end_conditions = {'resignation': False,
                                'checkmate': False, 
                                'stalemate': False, 
                                'draw_agreed': False,
-                               'HMC': False, 
+                               'FMR': False, 
                                '3_fold_rep': False}
         
         # Player variables
@@ -50,7 +50,7 @@ class Board:
         self.moves = []
         self.move_nr = 1
         self.move_history = []
-        self.position_history = []
+        self.position_history = {}
         self.previous_move = []
         self.all_possible_moves = {'w': [], 'b': []}
         
@@ -230,6 +230,8 @@ class Board:
             self.remove_piece(self.position[y2][x2])
             self.capture = True
             
+        if self.en_passant: self.capture = True
+            
         self.position[y2][x2]= self.moving
         self.previous_move = move
     
@@ -337,12 +339,48 @@ class Board:
     
     def next_turn(self, piece, move):
         """Update game state variables"""
+        
         self.save_position(piece, move)
         self.current_player = 0 if self.current_player == 1 else 1
         self.current_color = 'wb'[self.current_player]
         
         # Only update move nr is white is back in turn
         if self.current_color == 'w': self.move_nr += 1
+        
+        self.fifty_move_rule()
+        self.endgame()
+    
+    def fifty_move_rule(self):
+        """Fifty move rule"""
+        if self.FMR == 50:
+            self.end_conditions['FMR'] = True
+            return
+        
+        if self.capture or isinstance(self.moving, Pawn): 
+            self.FMR = 0
+            return
+        
+        else: self.FMR += 1
+    
+    def endgame(self):
+        """Update settings for endgame"""
+        colors = ['w', 'b']
+        total_value = self.get_value_pieces()
+        if self.move_nr > 30 or total_value < 15:
+            for color in colors:
+                x, y = self.king_position[color]
+                king = self.position[y][x]
+                king.is_endgame()
+                king.set_piece_value()
+    
+    def get_value_pieces(self):
+        """Get value of all pieces on the board"""
+        colors = ['w', 'b']
+        total_value = 0
+        for color in colors:
+            for piece in self.pieces[color]:
+                if piece.symbol != 'K': total_value += piece.points
+        return total_value
     
     def get_notation(self, piece, move):
         """"""
@@ -382,32 +420,47 @@ class Board:
     
     def save_position(self, piece, move):
         """"""
+        # Move history
         notation = self.get_notation(piece, move)
-        
         if self.current_color == 'w': 
             self.move_history.append(str(self.move_nr) + '. ' + notation + ' ')
-            self.position_history.append([self.position])
-        else:
-            self.move_history[-1] += ' ' + notation
-            self.position_history.extend([self.position])
+        else: self.move_history[-1] += ' ' + notation
+        
+        # Position history
+        key = self.position_to_key()
+        if str(key) in self.position_history.keys():
+            self.position_history[str(key)] += 1
+            if self.position_history[str(key)] == 3: self.end_conditions['3_fold_rep'] = True
+        else: self.position_history[str(key)] = 1
 
-    # def position_to_key(self, position):
-    #     """Create tuple of information about current position"""
-    #     board = position.get_board()
-    #     castle_rights = position.get_castle_rights()
-
-    #     save_board = []
-    #     for ranks in board:
-    #         save_board.append(tuple(ranks))
-    #     save_board = tuple(save_board)
-
-    #     save_rights = []
-    #     for right in castle_rights:
-    #         save_rights.append(tuple(right))
-    #     save_rights = tuple(save_rights)
-
-    #     key = (save_board, position.get_player(), save_rights)
-    #     return key
+    def position_to_key(self):
+        """For a repetition of position to occur, the following three rules have to met:
+        1) The same position must be repeated three times.
+        2) The same player must be on the move each time.
+        3) The same move options must be available each time. (En passant, castling)
+        """        
+        save_board = []
+        colors = ['w', 'b']
+        
+        for row in self.position:
+            save_row = []
+            for square in row:
+                if not isinstance(square, Empty): save_row.append(square.symbol)
+                else: save_row.append('0')
+            save_board.append(tuple(save_row))
+        save_board = tuple(save_board)
+        
+        player_rights = []
+        if self.en_passant: player_rights.append(self.moving.EPT)
+        
+        for color in colors:
+            x, y = self.king_position[color]
+            king = self.position[y][x]
+            player_rights.append(king.castling)
+        player_rights = tuple(player_rights)
+        
+        key = (save_board, self.current_player, player_rights)
+        return key
 
     def tile_coord_to_piece(self, y):
         """"""

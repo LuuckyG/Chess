@@ -508,7 +508,6 @@ class King(Piece):
                 if (x, y) != (self.x, self.y): tiles.append((x, y))               
         return tiles
     
-    
     def moves(self, board):
         """For the king, one need to checks the 8 surrounding squares, 
         for being in check, and castling options."""
@@ -569,7 +568,6 @@ class King(Piece):
                         square.attacked_by['direct'][self.id] = [(self.x, self.y), (x, y)]
                         self.attacks['direct'][square.id] = [(self.x, self.y), (x, y)]
                         self.valid_moves.append([(self.x, self.y), (x, y)])
-
 
     def castling_rights(self, board):
         """[summary]
@@ -641,7 +639,6 @@ class King(Piece):
                 if not direct_attack:
                     self.valid_moves.append([(self.x, y), (2, y)])
                     self.castling_loc.append((2, y))
-
 
     def is_check(self, enemy_pieces):
         """[summary]
