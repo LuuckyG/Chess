@@ -318,16 +318,16 @@ class Board:
                 for piece in self.pieces[color]:
                     if not isinstance(piece, King):
                         self.check_for_block_or_pin(king, piece)
-                        self.all_possible_moves[piece.color].extend(piece.valid_moves)
+                        self.all_possible_moves[color].extend(piece.valid_moves)
             else:
                 for piece in self.pieces[color]: 
                     if not isinstance(piece, King): 
-                        self.all_possible_moves[piece.color].extend(piece.valid_moves)
+                        self.all_possible_moves[color].extend(piece.valid_moves)
             
             # Check for game winning states
             if (not king.in_check 
                 and not self.all_possible_moves[color] 
-                and color == self.current_color):
+                and king.color == self.current_color):
                 print('stalemate')
                 self.end_conditions['stalemate'] = True
                 self.winner = 'Draw'
@@ -338,8 +338,7 @@ class Board:
                 self.winner = 'Black' if color == 'w' else 'White'
     
     def next_turn(self, piece, move):
-        """Update game state variables"""
-        
+        """Update game state variables"""        
         self.save_position(piece, move)
         self.current_player = 0 if self.current_player == 1 else 1
         self.current_color = 'wb'[self.current_player]
@@ -365,8 +364,8 @@ class Board:
     def endgame(self):
         """Update settings for endgame"""
         colors = ['w', 'b']
-        total_value = self.get_value_pieces()
-        if self.move_nr > 30 or total_value < 15:
+        total_value, num_pieces = self.get_value_pieces()
+        if self.move_nr > 30 or num_pieces <= 4 or total_value < 13:
             for color in colors:
                 x, y = self.king_position[color]
                 king = self.position[y][x]
@@ -377,10 +376,12 @@ class Board:
         """Get value of all pieces on the board"""
         colors = ['w', 'b']
         total_value = 0
+        num_pieces = 0
         for color in colors:
             for piece in self.pieces[color]:
                 if piece.symbol != 'K': total_value += piece.points
-        return total_value
+                if piece.symbol != 'K' and piece.symbol != 'P': num_pieces += 1
+        return total_value, num_pieces
     
     def get_notation(self, piece, move):
         """"""

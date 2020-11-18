@@ -433,10 +433,10 @@ class GameView:
     
     def create_buttons(self):
         """Function to create the buttons needed to navigate throught the game"""
-        
         width = self.screen.get_width()
         height = self.screen.get_height()
 
+        # ---------------------------------------------------------------------------------- #
         #### Start Screen ####
         self.settings_button = Button(color=self.LIGHT_GRAY, 
                                       x=0.10 * width, 

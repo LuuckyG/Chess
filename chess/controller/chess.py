@@ -215,13 +215,13 @@ class Chess:
         pass
     
     def update(self):
-        """"""
+        """Update game state and board position"""
         if self.status == 'game':
             self.board.update_possible_moves()
             self.check_for_game_end()
                 
     def check_for_game_end(self):
-        """"""
+        """Check for winner or draw"""
         for condition, state in self.board.end_conditions.items():
             if state: 
                 self.win_condition = condition
@@ -229,7 +229,7 @@ class Chess:
                 break
 
     def new_game(self, x, y):
-        """"""
+        """Show play again screen. Check for new game"""
         if self.view.draw_game_button.is_clicked(x, y): 
             self.board.end_conditions['draw_agreed'] = True
             self.board.winner = 'Draw'
@@ -240,10 +240,13 @@ class Chess:
             self.board.winner = ['White', 'Black'][winner]
     
     def play_again(self, x, y):
-        if self.view.play_again_button.is_clicked(x, y): self.status = 'start_screen'
+        """Start new game or go to start screen"""
+        if self.view.play_again_button.is_clicked(x, y): 
+            self.status = 'game'
+            self.get_settings()
+            self.start_game()
         if self.view.nomore_game_button.is_clicked(x, y): 
-            self.status = 'end_game'
-            self.play = False
+            self.status = 'start_screen'
 
     def chess_coord_to_pixels(self, board_x, board_y):
         """Get pixel coordinates from chess board coordinates"""
