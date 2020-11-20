@@ -544,11 +544,11 @@ class King(Piece):
                 
                 # Enemy pieces
                 if square.color != self.color:
-                    square.attacked_by['direct'][self.id] = [(self.x, self.y), (x, y)]
-                    self.attacks['direct'][square.id] = [(self.x, self.y), (x, y)]
+                    square.attacked_by['direct'][self.id] = [(self.x, self.y), (square.x, square.y)]
+                    self.attacks['direct'][square.id] = [(self.x, self.y), (square.x, square.y)]
                     
                     # Enemy piece is not defended and can be captured
-                    if len(square.defended_by) == 0: self.valid_moves.append([(self.x, self.y), (x, y)])
+                    if len(square.defended_by) == 0: self.valid_moves.append([(self.x, self.y), (square.x, square.y)])
                 
                 # Friendly piece  
                 else: square.defended_by.add(self.id)
@@ -556,13 +556,12 @@ class King(Piece):
             # Empty squares
             else:
                 possible = True
-                square.attacked_by['direct'][self.id] = [(self.x, self.y), (x, y)]
                 
                 # Square not attacked directly
                 if not square.attacked_by['direct'].keys(): 
-                    square.attacked_by['direct'][self.id] = [(self.x, self.y), (x, y)]
-                    self.attacks['direct'][square.id] = [(self.x, self.y), (x, y)]
-                    self.valid_moves.append([(self.x, self.y), (x, y)])
+                    square.attacked_by['direct'][self.id] = [(self.x, self.y), (square.x, square.y)]
+                    self.attacks['direct'][square.id] = [(self.x, self.y), (square.x, square.y)]
+                    self.valid_moves.append([(self.x, self.y), (square.x, square.y)])
                     break
                 
                 # Square is attacked
@@ -570,15 +569,18 @@ class King(Piece):
                     for enemy_piece in board.pieces[self.enemy_color]:
                         if enemy_piece.id in square.attacked_by['direct'].keys(): possible = False
                         
-                        # X-ray attack (only when in check)
+                        # X-ray attack - same line of attack - (only when in check)
                         if check and square.attacked_by['indirect'].keys():
                             if enemy_piece.id in square.attacked_by['indirect'].keys() and \
-                                enemy_piece.id in self.attacked_by['direct']: possible = False
+                                enemy_piece.id in self.attacked_by['direct']: 
+                                    direct_attack_line = set(self.attacked_by['direct'][enemy_piece.id])
+                                    indirect_attack_line = set(square.attacked_by['indirect'][enemy_piece.id])
+                                    if direct_attack_line.issubset(indirect_attack_line): possible = False
                     
                     if possible: 
-                        square.attacked_by['direct'][self.id] = [(self.x, self.y), (x, y)]
-                        self.attacks['direct'][square.id] = [(self.x, self.y), (x, y)]
-                        self.valid_moves.append([(self.x, self.y), (x, y)])
+                        square.attacked_by['direct'][self.id] = [(self.x, self.y), (square.x, square.y)]
+                        self.attacks['direct'][square.id] = [(self.x, self.y), (square.x, square.y)]
+                        self.valid_moves.append([(self.x, self.y), (square.x, square.y)])
 
     def castling_rights(self, board):
         """Check for castling options"""        
