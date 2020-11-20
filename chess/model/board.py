@@ -1,5 +1,5 @@
 import random
-from model.pieces import Pawn, Knight, Bishop, Rook, Queen, King, Empty
+from chess.model.pieces import *
 
 
 class Board:
@@ -15,7 +15,8 @@ class Board:
                      ['Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb', 'Pb'],  # 7
                      ['Rb', 'Nb', 'Bb', 'Qb', 'Kb', 'Bb', 'Nb', 'Rb']]  # 8
 
-    def __init__(self, square_width, square_height, is_flipped):
+    def __init__(self, square_width, square_height, is_flipped, start_position=START_POSITION):
+        
         self.square_width = square_width
         self.square_height = square_height
         
@@ -25,6 +26,7 @@ class Board:
         self.pieces = {'w': set(), 'b': set()}
         
         # Board position variables
+        self.start_position = start_position
         self.position = []
         self.highlighted_tiles = []
         self.arrow_coordinates = []
@@ -53,8 +55,6 @@ class Board:
         self.position_history = {}
         self.previous_move = []
         self.all_possible_moves = {'w': [], 'b': []}
-        
-        self.setup()
     
     def setup(self):
         """Create piece objects based on starting board position"""
@@ -65,10 +65,10 @@ class Board:
             for x in range(8):
                 self.id += 1
 
-                if self.START_POSITION[y][x] != 0:
+                if self.start_position[y][x] != 0:
                     
-                    symbol = self.START_POSITION[y][x][0]
-                    color = self.START_POSITION[y][x][1]
+                    symbol = self.start_position[y][x][0]
+                    color = self.start_position[y][x][1]
          
                     if symbol == 'K':
                         square = King(str(self.id), symbol, color, x, y, self.square_width, self.square_height)
@@ -96,9 +96,11 @@ class Board:
             self.position.append(board_row)
                 
     def flipped_board(self, y):
+        """Flip board"""
         return y if self.is_flipped else 7 - y
             
     def show(self):
+        """Print board position to command line"""
         for rows in self.position:
             row = []
             for square in rows:
@@ -107,7 +109,7 @@ class Board:
             print(row)
 
     def get_square(self, x, y):
-        """"""
+        """Return square"""
         if (0 <= x <= 7) and (0 <= y <= 7):
             y = self.flipped_board(y)
             return self.position[y][x]
@@ -130,11 +132,7 @@ class Board:
         else: self.make_move(move)
 
     def special_moves(self, x, y):
-        """[summary]
-
-        Args:
-            x ([type]): [description]
-            y ([type]): [description]
+        """Check if last move was any `special` move: en passant, promotion and castling.
         """
         
         if isinstance(self.moving, Pawn) and (x, y) == self.moving.EPT: 
@@ -150,6 +148,7 @@ class Board:
         else: self.castling = False
         
     def is_en_passant(self, move):
+        """Take en passant"""
         x2, y2 = move[1]
         self.make_move(move)
         
@@ -163,6 +162,7 @@ class Board:
         self.position[ept_y][x2] = Empty(str(self.id), x2, ept_y)
 
     def is_promotion(self, move):
+        """Promote pawn"""
         x2, y2 = move[1]
         self.make_move(move)
                 
@@ -214,12 +214,7 @@ class Board:
         self.position[y2][x1] = Empty(str(self.id), x1, y2)
 
     def make_move(self, move):
-        """Make the move and update board variables
-
-        Args:
-            x2 (int): [description]
-            tile_y2 (int): [description]
-        """
+        """Make the move and update board variables"""
         self.capture = False
         (x1, y1), (x2, y2) = move
         self.moving.make_move(x2, y2)
@@ -241,15 +236,7 @@ class Board:
         self.pieces[color].discard(piece)
     
     def check_for_block_or_pin(self, king, piece):
-        """Check if piece is pinned and can block or capture attacker
-
-        Args:
-            king ():
-            piece ([type]): [description]
-
-        Returns:
-            Piece: the piece that pins the current piece
-        """
+        """Check if piece is pinned and can block or capture attacker"""
 
         # Double check
         if len(king.attacked_by['direct'].keys()) > 1:
@@ -272,14 +259,14 @@ class Board:
             piece.valid_moves = []
 
         # Pin: check for capture of attacking piece
-        elif king.attacked_by['indirect']:         
+        elif king.attacked_by['indirect']: 
             king_attacker_ids = king.attacked_by['indirect'].keys()
             piece_attacker_ids = piece.attacked_by['direct'].keys()
             
             for attacker_id in piece_attacker_ids:
                 if attacker_id in king_attacker_ids:
                     moves = piece.can_block_or_capture(king.attacked_by['indirect'][attacker_id])
-            
+
                     if moves: piece.can_move = True
                     else: piece.can_move = False
                 
@@ -314,11 +301,28 @@ class Board:
             king.moves(self)
             self.all_possible_moves[king.color].extend(king.valid_moves)
             
-            if king.in_check or king.attacked_by['indirect']:
+            if king.in_check:
                 for piece in self.pieces[color]:
                     if not isinstance(piece, King):
                         self.check_for_block_or_pin(king, piece)
                         self.all_possible_moves[color].extend(piece.valid_moves)
+            
+            elif king.attacked_by['indirect']:
+                pinned_piece = [] 
+                king_attacker_ids = king.attacked_by['indirect'].keys()
+                
+                for piece in self.pieces[color]: 
+                    piece_attacker_ids = list(piece.attacked_by['direct'].keys())
+                    piece_attacker_ids.extend(piece.attacked_by['indirect'].keys())
+                    for attacker_id in piece_attacker_ids:
+                        if attacker_id in king_attacker_ids:
+                            pinned_piece.append(piece)
+                            
+                if len(pinned_piece) == 1: self.check_for_block_or_pin(king, pinned_piece[0])
+                else:
+                    for piece in self.pieces[color]: 
+                        if not isinstance(piece, King): 
+                            self.all_possible_moves[color].extend(piece.valid_moves)
             else:
                 for piece in self.pieces[color]: 
                     if not isinstance(piece, King): 
@@ -351,7 +355,7 @@ class Board:
     
     def fifty_move_rule(self):
         """Fifty move rule"""
-        if self.FMR == 50:
+        if self.FMR == 100:
             self.end_conditions['FMR'] = True
             return
         
@@ -370,7 +374,7 @@ class Board:
                 x, y = self.king_position[color]
                 king = self.position[y][x]
                 king.is_endgame()
-                king.set_piece_value()
+                king.set_piece_value(king.value_table)
     
     def get_value_pieces(self):
         """Get value of all pieces on the board"""
@@ -384,7 +388,7 @@ class Board:
         return total_value, num_pieces
     
     def get_notation(self, piece, move):
-        """"""
+        """Get notation of move"""
         notation = ''
         (x1, y1), (x2, y2) = move
         
@@ -420,7 +424,7 @@ class Board:
         return notation
     
     def save_position(self, piece, move):
-        """"""
+        """Save position and get notation of last move"""
         # Move history
         notation = self.get_notation(piece, move)
         if self.current_color == 'w': 
