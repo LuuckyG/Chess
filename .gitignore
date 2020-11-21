@@ -3,3 +3,7 @@
 __pycache__
 *.pyc
 *.db
+notes.txt
+openings.txt
+openings_list.docx
+create_opening.py
