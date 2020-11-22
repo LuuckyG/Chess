@@ -292,11 +292,17 @@ class Pawn(Piece):
             square = board.position[self.y + self.walk_direction][self.x - 1]
             if not isinstance(square, Empty) and square.color == self.enemy_color:
                 self.add_attack(square)
+            else:
+                square.attacked_by['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
+                self.attacks['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
                      
         if self.x != 7:
             square = board.position[self.y + self.walk_direction][self.x + 1]
             if not isinstance(square, Empty) and square.color == self.enemy_color:
                 self.add_attack(square)
+            else:
+                square.attacked_by['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
+                self.attacks['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
     
     def en_passant(self, board):
         """En Passant"""

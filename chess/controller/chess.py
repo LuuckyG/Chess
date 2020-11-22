@@ -1,7 +1,8 @@
-from model.pieces import Empty
-from view.view import GameView
-from model.board import Board
 
+from chess.view.view import GameView
+from chess.model.ai import AI
+from chess.model.board import Board
+from chess.model.pieces import *
 
 class Chess:
     """Controller class of the game Chess"""
@@ -114,21 +115,18 @@ class Chess:
         self.board = Board(square_width=self.view.square_width, 
                            square_height=self.view.square_height,
                            is_flipped=self.is_flipped)
+        self.board.setup()
 
         # Create players
         self.board.player_list.append('Human')
         
-        if self.settings['vs_computer']: self.board.player_list.append('AI')
-        else: self.board.player_list.append('Human') 
+        if self.settings['vs_computer']: 
+            self.ai = AI('b', 2 * self.settings['ai_level'], self.settings)
+            self.board.player_list.append(self.ai)
+        else: self.board.player_list.append('Human')
         
     def play_game(self, mouse_x, mouse_y, is_up):
-        """[summary]
-
-        Args:
-            mouse_x ([type]): [description]
-            mouse_y ([type]): [description]
-            is_up (bool): [description]
-        """
+        """Playing the game"""
         x, y = self.pixel_coord_to_tile(mouse_x, mouse_y)
         square = self.board.get_square(x, y)
         
@@ -142,15 +140,15 @@ class Chess:
             # Check possible moves, and if possible
             # make the move.
             self.board.moves = self.is_clicked.valid_moves
-            if (square.x, square.y) != self.left_click:
+            if square and (square.x, square.y) != self.left_click:
                 self.move = [self.left_click, (square.x, square.y)]
                 
                 if (self.is_clicked.can_move 
                     and self.move in self.is_clicked.valid_moves):
-                    self.board.move_piece(color=self.board.current_color, 
-                                          moving_piece=self.is_clicked, 
-                                          move=self.move)
-                    self.update()                    
+                    self.board.move_piece(self.board.current_color, 
+                                          self.is_clicked, 
+                                          self.move)
+                    self.update()
                     self.board.next_turn(self.is_clicked, self.move)
                     if self.settings['flip']: self.board.is_flipped = not self.board.is_flipped
                                         
@@ -211,9 +209,14 @@ class Chess:
         else: self.right_click = (x, y)          
 
     def ai_move(self):
-        """"""
-        pass
-    
+        """Let AI make move based on minimax"""
+        # self.view.show_think()
+        piece, move = self.ai.think(self.board)
+        self.board.move_piece(self.ai.color, piece, move)
+        self.update()
+        self.board.next_turn(piece, move)
+        if self.settings['flip']: self.board.is_flipped = not self.board.is_flipped
+
     def update(self):
         """Update game state and board position"""
         if self.status == 'game':

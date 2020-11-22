@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 from chess.controller.chess import Chess
+from chess.model.ai import AI
 
 
 class Game:
@@ -54,6 +55,10 @@ class Game:
 
     def update(self):
         """move guys."""
+        if (self.chess.status == 'game' 
+            and isinstance(self.chess.board.player_list[self.chess.board.current_player], AI)): 
+                self.chess.ai_move()
+            
         self.chess.update()
 
 

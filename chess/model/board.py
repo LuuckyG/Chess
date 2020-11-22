@@ -389,47 +389,45 @@ class Board:
     
     def get_notation(self, piece, move):
         """Get notation of move"""
-        notation = ''
+        self.notation = ''
         (x1, y1), (x2, y2) = move
         
-        if piece.symbol != 'P': notation = piece.symbol
+        if piece.symbol != 'P': self.notation = piece.symbol
         
         if self.promotion: 
             promoted_piece = self.position[y2][x2]
-            notation = piece.coordinate + '=' + promoted_piece.symbol
+            self.notation = piece.coordinate + '=' + promoted_piece.symbol
         
         elif self.en_passant:
-            notation = 'abcdefgh'[x1] + str(y1)
+            self.notation = 'abcdefgh'[x1] + str(y1)
             ept = self.position[piece.EPT[1]][piece.EPT[0]]
-            notation += 'x'
-            notation += ept.coordinate
+            self.notation += 'x'
+            self.notation += ept.coordinate
         
         elif self.castling: 
-            if x2 == 6: notation = 'O-O'
-            if x2 == 2: notation = 'O-O-O'
+            if x2 == 6: self.notation = 'O-O'
+            if x2 == 2: self.notation = 'O-O-O'
             
         else:
             if self.capture: 
-                if piece.symbol == 'P': notation += 'abcdefgh'[x1]
-                notation += 'x'
-            notation += piece.coordinate
+                if piece.symbol == 'P': self.notation += 'abcdefgh'[x1]
+                self.notation += 'x'
+            self.notation += piece.coordinate
             
         enemy_color = 'b' if self.current_color == 'w' else 'w'
         king_x, king_y = self.king_position[enemy_color]
         enemy_king = self.position[king_y][king_x]
         
-        if self.end_conditions['checkmate']: notation += '#' 
-        elif enemy_king.in_check: notation += '+'
+        if self.end_conditions['checkmate']: self.notation += '#' 
+        elif enemy_king.in_check: self.notation += '+'
         
-        return notation
-    
     def save_position(self, piece, move):
         """Save position and get notation of last move"""
         # Move history
-        notation = self.get_notation(piece, move)
+        self.get_notation(piece, move)
         if self.current_color == 'w': 
-            self.move_history.append(str(self.move_nr) + '. ' + notation + ' ')
-        else: self.move_history[-1] += ' ' + notation
+            self.move_history.append(str(self.move_nr) + '.' + self.notation)
+        else: self.move_history[-1] += ' ' + self.notation
         
         # Position history
         key = self.position_to_key()

@@ -6,4 +6,5 @@ __pycache__
 notes.txt
 openings.txt
 openings_list.docx
-create_opening.py
+opening_table.json
+openings.py
