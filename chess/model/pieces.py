@@ -290,16 +290,18 @@ class Pawn(Piece):
         """Pawn captures"""
         if self.x != 0:
             square = board.position[self.y + self.walk_direction][self.x - 1]
-            if not isinstance(square, Empty) and square.color == self.enemy_color:
-                self.add_attack(square)
+            if not isinstance(square, Empty):
+                if square.color == self.enemy_color: self.add_attack(square)
+                else: square.defended_by.add(self)
             else:
                 square.attacked_by['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
                 self.attacks['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
                      
         if self.x != 7:
             square = board.position[self.y + self.walk_direction][self.x + 1]
-            if not isinstance(square, Empty) and square.color == self.enemy_color:
-                self.add_attack(square)
+            if not isinstance(square, Empty):
+                if square.color == self.enemy_color: self.add_attack(square)
+                else: square.defended_by.add(self)
             else:
                 square.attacked_by['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]
                 self.attacks['direct'][str(self.id)] = [(self.x, self.y), (square.x, square.y)]

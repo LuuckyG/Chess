@@ -27,6 +27,7 @@ class Board:
         
         # Board position variables
         self.start_position = start_position
+        self.game = {}
         self.position = []
         self.highlighted_tiles = []
         self.arrow_coordinates = []
@@ -53,7 +54,7 @@ class Board:
         self.move_nr = 1
         self.move_history = []
         self.position_history = {}
-        self.previous_move = []
+        self.previous_moves = []
         self.all_possible_moves = {'w': [], 'b': []}
     
     def setup(self):
@@ -105,7 +106,7 @@ class Board:
             row = []
             for square in rows:
                 if not isinstance(square, Empty): row.append(square.symbol + square.color)
-                else: row.append(0)
+                else: row.append('  ')
             print(row)
 
     def get_square(self, x, y):
@@ -169,7 +170,7 @@ class Board:
         # Random promotion
         self.id += 1
         piece_nr = random.choice([0, 1, 2, 3])
-        piece_type = [Queen, Rook, Bishop, Knight][piece_nr]
+        piece_type = [Queen, Rook, Bishop, Knight][0]
         
         symbol = 'Q'
         
@@ -228,7 +229,7 @@ class Board:
         if self.en_passant: self.capture = True
             
         self.position[y2][x2]= self.moving
-        self.previous_move = move
+        self.previous_moves.append(move)
     
     def remove_piece(self, piece):
         color = 'w' if self.current_color == 'b' else 'b'
@@ -341,6 +342,37 @@ class Board:
                 self.end_conditions['checkmate'] = True
                 self.winner = 'Black' if color == 'w' else 'White'
     
+    def undo_move(self):
+        """Move to position before this move"""
+        last_move = self.previous_moves.pop(-1)
+       
+        print(last_move)
+        print(self.move_nr)
+        # print(self.game)
+        
+        self.current_color = 'b' if self.current_color == 'w' else 'w'
+        if self.current_color == 'b': self.move_nr -= 1
+        print(self.move_nr)
+        
+        # State of moved piece
+        moved_piece = self.game[self.move_nr][self.current_color]['moved']
+        moved_piece.x = last_move[0][0]
+        moved_piece.y = last_move[0][1]
+        
+        # State of possible captured piece
+        captured = self.game[self.move_nr][self.current_color]['captured']
+        if captured:
+            captured_piece = self.captured_pieces[self.current_color].pop(-1)
+            self.position[captured_piece.y][captured_piece.x] = captured_piece
+        
+        # Game state variables
+        self.capture = captured
+        self.position = self.game[self.move_nr][self.current_color]['position']
+        self.en_passant = self.game[self.move_nr][self.current_color]['enp']
+        self.castling = self.game[self.move_nr][self.current_color]['castling']
+        self.promotion = self.game[self.move_nr][self.current_color]['promotion']
+        self.end_conditions = self.game[self.move_nr][self.current_color]['conditions']
+
     def next_turn(self, piece, move):
         """Update game state variables"""        
         self.save_position(piece, move)
@@ -436,6 +468,18 @@ class Board:
             if self.position_history[str(key)] == 3: self.end_conditions['3_fold_rep'] = True
         else: self.position_history[str(key)] = 1
 
+        # Save game state
+        if self.current_color == 'w': self.game[self.move_nr] = {}
+        self.game[self.move_nr][self.current_color] = {'color': self.current_color,
+                                                       'moved': self.moving,
+                                                       'position': self.position, 
+                                                       'enp': self.en_passant, 
+                                                       'castling': self.castling, 
+                                                       'promotion': self.promotion, 
+                                                       'captured': self.capture,
+                                                       'conditions': self.end_conditions
+                                                       }
+
     def position_to_key(self):
         """For a repetition of position to occur, the following three rules have to met:
         1) The same position must be repeated three times.
@@ -466,5 +510,5 @@ class Board:
         return key
 
     def tile_coord_to_piece(self, y):
-        """"""
+        """Get correct y coordinate"""
         return y if self.is_flipped else (7 - y)

@@ -1,14 +1,14 @@
 import os 
 import pygame
-from view.arrow import Arrow
-from view.button import Button
-from model.pieces import Empty, King
+from chess.view.arrow import Arrow
+from chess.view.button import Button
+from chess.model.pieces import Empty, King
 
 
 class GameView:
-    STARTSCREEN_IMG = pygame.image.load(os.path.join('view/media', 'startscreen.jpg')) 
-    BACKGROUND_IMG =  pygame.image.load(os.path.join('view/media', 'board.png'))
-    PIECES_IMG =      pygame.image.load(os.path.join('view/media', 'pieces.png'))
+    STARTSCREEN_IMG = pygame.image.load(os.path.join('chess/view/media', 'startscreen.jpg')) 
+    BACKGROUND_IMG =  pygame.image.load(os.path.join('chess/view/media', 'board.png'))
+    PIECES_IMG =      pygame.image.load(os.path.join('chess/view/media', 'pieces.png'))
 
     WHITE = (255, 255, 255)
     YELLOW = (255, 233, 33)
@@ -117,7 +117,7 @@ class GameView:
         self.draw_captured_pieces(board)
         self.draw_move_list(board)
         self.draw_highlighed_tiles(board)
-        if board.previous_move: self.draw_previous_move(board)
+        if board.previous_moves: self.draw_previous_move(board)
         self.draw_possible_moves(board)
         self.draw_all_pieces(board, dragged_piece)
         self.draw_arrows(board)
@@ -136,7 +136,7 @@ class GameView:
     
     def draw_previous_move(self, board):
         """Highlight squares to indicate last move"""
-        (x1, y1), (x2, y2) = board.previous_move
+        (x1, y1), (x2, y2) = board.previous_moves[-1]
         if not board.is_flipped: y1 = 7 - y1
         if not board.is_flipped: y2 = 7 - y2        
         self.screen.blit(self.images['yellow_box'], (x1 * self.square_width, y1 * self.square_height))
@@ -402,13 +402,13 @@ class GameView:
 
     def get_orig_images(self):
         """Load all the media into one dictionary"""
-        circle_image_green = pygame.image.load(os.path.join('view/media', 'green_circle_small.png')).convert_alpha()
-        circle_image_capture = pygame.image.load(os.path.join('view/media', 'green_circle_neg.png')).convert_alpha()
-        circle_image_red = pygame.image.load(os.path.join('view/media', 'red_circle_big.png')).convert_alpha()
-        green_box_image = pygame.image.load(os.path.join('view/media', 'green_box.png')).convert_alpha()
-        circle_image_yellow = pygame.image.load(os.path.join('view/media', 'yellow_circle_big.png')).convert_alpha()
-        circle_image_green_big = pygame.image.load(os.path.join('view/media', 'green_circle_big.png')).convert_alpha()
-        yellow_box_image = pygame.image.load(os.path.join('view/media', 'yellow_box.png')).convert_alpha()
+        circle_image_green = pygame.image.load(os.path.join('chess/view/media', 'green_circle_small.png')).convert_alpha()
+        circle_image_capture = pygame.image.load(os.path.join('chess/view/media', 'green_circle_neg.png')).convert_alpha()
+        circle_image_red = pygame.image.load(os.path.join('chess/view/media', 'red_circle_big.png')).convert_alpha()
+        green_box_image = pygame.image.load(os.path.join('chess/view/media', 'green_box.png')).convert_alpha()
+        circle_image_yellow = pygame.image.load(os.path.join('chess/view/media', 'yellow_circle_big.png')).convert_alpha()
+        circle_image_green_big = pygame.image.load(os.path.join('chess/view/media', 'green_circle_big.png')).convert_alpha()
+        yellow_box_image = pygame.image.load(os.path.join('chess/view/media', 'yellow_box.png')).convert_alpha()
 
         images = {
             'circle_image_green': circle_image_green,
@@ -475,26 +475,26 @@ class GameView:
         #### Settings Screen ####
 
         # Create two buttons, one voor human vs. human and one for human vs. AI
-        self.human_vs_human_button = Button(color=self.GREEN, 
+        self.human_vs_human_button = Button(color=self.LIGHT_GRAY, 
                                             x=0.4 * width, 
                                             y=0.4 * height - 15, 
                                             width=0.2 * width, 
                                             height=30, 
                                             value=False,
                                             group='vs_computer', 
-                                            selected=True, 
-                                            text_color=self.WHITE, 
+                                            selected=False, 
+                                            text_color=self.BLACK, 
                                             text='Human vs. Human')
 
-        self.human_vs_ai_button = Button(color=self.LIGHT_GRAY, 
+        self.human_vs_ai_button = Button(color=self.GREEN, 
                                          x=0.65 * width, 
                                          y=0.4 * height - 15, 
                                          width=0.2 * width, 
                                          height=30,
                                          value=True,
                                          group='vs_computer', 
-                                         selected=False, 
-                                         text_color=self.BLACK, 
+                                         selected=True, 
+                                         text_color=self.WHITE, 
                                          text='Human vs. AI')
         
         # Create buttons to select the strength of the AI

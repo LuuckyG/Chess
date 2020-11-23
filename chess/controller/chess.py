@@ -76,7 +76,10 @@ class Chess:
         """Get the selected settings by the user"""
         for button in self.view.all_buttons:
             group = button.group
-            if (group == 'flip' or group == 'vs_computer' or group == 'ai_level') and button.selected:
+            if ((group == 'flip' 
+                or group == 'vs_computer' 
+                or group == 'ai_level') 
+                and button.selected):
                 self.settings[group] = button.value
 
     def update_settings(self, x, y):
@@ -121,7 +124,7 @@ class Chess:
         self.board.player_list.append('Human')
         
         if self.settings['vs_computer']: 
-            self.ai = AI('b', 2 * self.settings['ai_level'], self.settings)
+            self.ai = AI('b', self.settings['ai_level'], self.settings)
             self.board.player_list.append(self.ai)
         else: self.board.player_list.append('Human')
         

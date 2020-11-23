@@ -58,9 +58,7 @@ class Game:
         if (self.chess.status == 'game' 
             and isinstance(self.chess.board.player_list[self.chess.board.current_player], AI)): 
                 self.chess.ai_move()
-            
         self.chess.update()
-
 
     def handle_events(self):
         """handle events: keyboard, mouse, etc."""
